@@ -7,10 +7,11 @@ from mpl_toolkits.mplot3d import Axes3D
 
 class Inter:
 
-    def __init__(self, bodies):
+    def __init__(self, bodies, names_modules):
 
         # self.workspace = np.zeros(workspace)
         self.bodies = bodies
+        self.modules = names_modules
         self.bodies_new = {}
 
     def append_body(self, name_body, body):
@@ -30,15 +31,15 @@ class Inter:
         :return:
         '''
         body = self.bodies[name_body]
-        print(body)
+        #print(body)
 
-        r = R.from_euler('xyz', [coord_centres[0], coord_centres[2], coord_centres[3]], degrees=True)
+        r = R.from_euler('xyz', [coord_centres[0], coord_centres[1], coord_centres[2]], degrees=True)
         Rot = r.as_dcm()
-        print(Rot)
+        #print(Rot)
 
         body_new = np.dot(body, Rot)
         body_new += [coord_centres[3], coord_centres[4], coord_centres[5]]
-        self.bodies[name_body] = np.round(body_new)
+        self.bodies_new[name_body] = np.round(body_new)
 
         '''fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
@@ -59,9 +60,38 @@ class Inter:
                 else:
 
                     # inter_bodies = np.intersect1d(self.bodies[body_1], self.bodies[body_2])
-                    inter_bodies = np.array([x for x in set(tuple(x) for x in self.bodies[body_1]) & set(
-                        tuple(x) for x in self.bodies[body_2])])
+                    inter_bodies = np.array([x for x in set(tuple(x) for x in self.bodies_new[body_1]) & set(
+                        tuple(x) for x in self.bodies_new[body_2])])
                     return (inter_bodies.shape[0])
+
+    def visual_workspace(self):
+
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        for name in self.bodies_new:
+            if name in self.modules:
+                ax.scatter(self.bodies_new[name][:, 0], self.bodies_new[name][:, 1], self.bodies_new[name][:, 2], c='r', marker='o')
+            else:
+                ax.scatter(self.bodies_new[name][:, 0], self.bodies_new[name][:, 1], self.bodies_new[name][:, 2], c='b',
+                           marker='o')
+        #ax.scatter(body[:, 0], body[:, 1], body[:, 2], c='b', marker='^')
+
+        ax.set_xlabel('X Label')
+        ax.set_ylabel('Y Label')
+        ax.set_zlabel('Z Label')
+        plt.show()
+        '''name = 'module_2'
+
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        ax.scatter(self.bodies_new[name][:, 0], self.bodies_new[name][:, 1], self.bodies_new[name][:, 2], c='r',
+                           marker='o')
+
+        ax.set_xlabel('X Label')
+        ax.set_ylabel('Y Label')
+        ax.set_zlabel('Z Label')
+        plt.show()'''
+
 
 
 if __name__ == '__main__':
