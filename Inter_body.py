@@ -53,6 +53,7 @@ class Inter:
 
     def chek_intersection(self):
 
+        inter = 0
         for body_1 in self.bodies:
             for body_2 in self.bodies:
                 if body_1 == body_2:
@@ -62,7 +63,9 @@ class Inter:
                     # inter_bodies = np.intersect1d(self.bodies[body_1], self.bodies[body_2])
                     inter_bodies = np.array([x for x in set(tuple(x) for x in self.bodies_new[body_1]) & set(
                         tuple(x) for x in self.bodies_new[body_2])])
-                    return (inter_bodies.shape[0])
+                    inter += inter_bodies.shape[0]
+
+        return inter
 
     def visual_workspace(self):
 
