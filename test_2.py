@@ -1,6 +1,8 @@
 from Inter_body import Inter
 import numpy as np
 import random
+from scipy.optimize import minimize
+import matplotlib.pyplot as plt
 
 d = 2
 px = 60
@@ -8,6 +10,7 @@ py = 80
 pz = 50
 d_ban = 10
 
+goal = np.array([])
 walls = {}
 bans = {}
 bodies_test = {}
@@ -17,6 +20,7 @@ history_args = {}
 list_bodies_r ={}
 verts = {}
 m = 3
+num_iter = 0
 
 
 list_bodies['module_1'] = m*np.array([-2, 4, -6, 2, -2, 2, 100])
@@ -120,6 +124,7 @@ def restricted_area():
 
 
 def change_position(name, number_wall, pos_1, pos_2, pos_3):
+    history_args[name] = np.array([number_wall, pos_1, pos_2, pos_3])
     number_wall = int(number_wall % 7)
 
     pos_3 = int(pos_3 // 3) * 90
@@ -259,7 +264,7 @@ def change_position(name, number_wall, pos_1, pos_2, pos_3):
             offset_z = pos_2
         gamma = 0
 
-    print(number_wall)
+    #print(number_wall)
     cen_mass[name] = [offset_x, offset_y, offset_z]
     history_args[name] = [number_wall, pos_1, pos_2, pos_3]
 
@@ -281,7 +286,8 @@ def centre_mass():
     c_z = m_z/sum_m
 
     result = (c_x**2 + c_y**2 + c_z)**0.5
-    print(result)
+    num_iter += 1
+    print(current_body, result)
     return result
 
 def goal_function():
@@ -290,6 +296,30 @@ def goal_function():
     dist = centre_mass()
     return (inters + 100*dist)
 
+def function_for_opt(args):
+
+    change_position(current_body, args[0], args[1], args[2], args[3])
+    np.append(goal, goal_function())
+    return (goal_function())
+
+current_body = ''
+
+def my_optimization():
+    for i in range(3):
+        for name in list_bodies:
+            current_body = name
+            x0 = history_args[current_body]
+            res = minimize(function_for_opt, x0, method='powell',
+                           options={'maxfev': 30})
+            print(res.x)
+
+# def my_optimization():
+#     x0 = history_args[current_body].copy()
+#     x0 = np.array([0.7, 0.8, 1.9, 1.2])
+#     #print(x0.insert(0, 'module_1'))
+#     res = minimize(function_for_opt, x0, method='powell',
+#                            options={'xtol': 1e-6, 'disp': True})
+#     print(res.x)
 
 walls_function()
 restricted_area()
@@ -300,5 +330,14 @@ for name in bans:
     test.filling(name, [0, 0, 0, 0, 0, 0])
 
 body_random()
+#test.visual_workspace()
+#print(goal_function())
+
+#print(history_args)
+my_optimization()
+
 test.visual_workspace()
+plt.plot(goal)
+plt.ylabel('Goal')
+plt.show()
 print(goal_function())
