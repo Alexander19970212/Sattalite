@@ -2,21 +2,22 @@ import numpy as  np
 import scipy
 from scipy.spatial.transform import Rotation as R
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection, Line3DCollection
 from mpl_toolkits.mplot3d import Axes3D
 
 
 class Inter:
 
-    def __init__(self, bodies, names_modules):
+    def __init__(self, bodies, names_modules, cernals):
 
         # self.workspace = np.zeros(workspace)
         self.bodies = bodies
         self.modules = names_modules
         self.bodies_new = {}
+        self.cernals = cernals
 
     def append_body(self, name_body, body):
         self.bodies[name_body] = body
-
 
     def filling(self, name_body, coord_centres):
         '''
@@ -31,11 +32,11 @@ class Inter:
         :return:
         '''
         body = self.bodies[name_body]
-        #print(body)
+        # print(body)
 
         r = R.from_euler('xyz', [coord_centres[0], coord_centres[1], coord_centres[2]], degrees=True)
         Rot = r.as_dcm()
-        #print(Rot)
+        # print(Rot)
 
         body_new = np.dot(body, Rot)
         body_new += [coord_centres[3], coord_centres[4], coord_centres[5]]
@@ -73,28 +74,56 @@ class Inter:
         ax = fig.add_subplot(111, projection='3d')
         for name in self.bodies_new:
             if name in self.modules:
-                ax.scatter(self.bodies_new[name][:, 0], self.bodies_new[name][:, 1], self.bodies_new[name][:, 2], c='r', marker='o')
+                ax.scatter(self.bodies_new[name][:, 0], self.bodies_new[name][:, 1], self.bodies_new[name][:, 2], c='r',
+                           marker='o')
             else:
                 ax.scatter(self.bodies_new[name][:, 0], self.bodies_new[name][:, 1], self.bodies_new[name][:, 2], c='b',
                            marker='o')
-        #ax.scatter(body[:, 0], body[:, 1], body[:, 2], c='b', marker='^')
+        # ax.scatter(body[:, 0], body[:, 1], body[:, 2], c='b', marker='^')
 
         ax.set_xlabel('X Label')
         ax.set_ylabel('Y Label')
         ax.set_zlabel('Z Label')
         plt.show()
-        '''name = 'module_2'
+
+    def visual_workspace_poly(self):
 
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
-        ax.scatter(self.bodies_new[name][:, 0], self.bodies_new[name][:, 1], self.bodies_new[name][:, 2], c='r',
-                           marker='o')
+        print(self.cernals)
+        for name in self.bodies_new:
+            print(self.cernals[name])
+            Z = self.bodies_new[name][self.cernals[name], :]
+            verts = [[Z[0], Z[1], Z[2], Z[3]], [Z[4], Z[5], Z[6], Z[7]], [Z[0], Z[1], Z[5], Z[4]],
+                     [Z[2], Z[3], Z[7], Z[6]], [Z[1], Z[2], Z[6], Z[5]],
+                     [Z[4], Z[7], Z[3], Z[0]]]
+
+            # plot sides
+
+            if name in self.modules:
+                ax.add_collection3d(Poly3DCollection(verts,
+                                                     facecolors='cyan', linewidths=1, edgecolors='r', alpha=.25))
+            else:
+                ax.add_collection3d(Poly3DCollection(verts,
+                                                     facecolors='cyan', linewidths=1, edgecolors='r', alpha=.25))
+        # ax.scatter(body[:, 0], body[:, 1], body[:, 2], c='b', marker='^')
 
         ax.set_xlabel('X Label')
         ax.set_ylabel('Y Label')
         ax.set_zlabel('Z Label')
-        plt.show()'''
+        plt.show()
 
+    '''name = 'module_2'
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.scatter(self.bodies_new[name][:, 0], self.bodies_new[name][:, 1], self.bodies_new[name][:, 2], c='r',
+                       marker='o')
+
+    ax.set_xlabel('X Label')
+    ax.set_ylabel('Y Label')
+    ax.set_zlabel('Z Label')
+    plt.show()'''
 
 
 if __name__ == '__main__':

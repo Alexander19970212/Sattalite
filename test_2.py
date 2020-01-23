@@ -17,6 +17,7 @@ class Optimization:
         self.goal = np.array([])
         self.walls = {}
         self.bans = {}
+        self.cernals = {}
         self.bodies_test = {}
         self.cen_mass = {}
         self.list_bodies = {}
@@ -39,7 +40,7 @@ class Optimization:
             # print(np.delete(list_bodies[name], [6]).reshape((3, 2)))
             self.creation_workspace(name, np.delete(self.list_bodies[name], [6]).reshape((3, 2)))
 
-        self.test = Inter(self.bodies_test, self.bodies_test.keys())
+        self.test = Inter(self.bodies_test, self.bodies_test.keys(), self.cernals)
         self.walls_function()
         self.restricted_area()
 
@@ -75,13 +76,29 @@ class Optimization:
                         [list_bodies_r[name][0, 1], list_bodies_r[name][1, 0], list_bodies_r[name][2, 1]]]])'''
 
     def creation_workspace(self, name, Shape_body):
+        num_str = 0
+        list_centre = []
+        list_cernals = [[Shape_body[0, 0], Shape_body[1, 0], Shape_body[2, 0]],
+                        [Shape_body[0, 1], Shape_body[1, 0], Shape_body[2, 0]],
+                        [Shape_body[0, 1], Shape_body[1, 1], Shape_body[2, 0]],
+                        [Shape_body[0, 0], Shape_body[1, 1], Shape_body[2, 0]],
+                        [Shape_body[0, 0], Shape_body[1, 0], Shape_body[2, 1]],
+                        [Shape_body[0, 1], Shape_body[1, 0], Shape_body[2, 1]],
+                        [Shape_body[0, 1], Shape_body[1, 1], Shape_body[2, 1]],
+                        [Shape_body[0, 0], Shape_body[1, 1], Shape_body[2, 1]]]
         body = [[0, 0, 0]]
-        for i in range(int(Shape_body[0, 0]), int(Shape_body[0, 1])):
-            for j in range(int(Shape_body[1, 0]), int(Shape_body[1, 1])):
-                for k in range(int(Shape_body[2, 0]), int(Shape_body[2, 1])):
+        for i in range(int(Shape_body[0, 0])-1, int(Shape_body[0, 1])+1):
+            for j in range(int(Shape_body[1, 0])-1, int(Shape_body[1, 1])+1):
+                for k in range(int(Shape_body[2, 0])-1, int(Shape_body[2, 1])+1):
                     body = np.append(body, [[i, j, k]], axis=0)
-                    # print(i, j, k)
+                    if [i, j, k] in list_cernals:
+                        print(num_str)
+                        list_centre.append(num_str)
+                    num_str += 1
 
+
+                    # print(i, j, k)
+        self.cernals[name] = list_centre
         self.bodies_test[name] = body
 
     def walls_function(self):
@@ -112,6 +129,8 @@ class Optimization:
             Number_wall = random.uniform(0, 9)
 
             self.change_position(name, Number_wall, pos_1, pos_2, pos_3)
+
+        self.test.visual_workspace_poly()
 
     def restricted_area(self):
 
@@ -340,10 +359,10 @@ class Optimization:
 if __name__ == '__main__':
     Opt_1 = Optimization()
     Opt_1.body_random()
-    # test.visual_workspace()
-    # print(goal_function())
+    #Opt_1.visual_workspace_poly()
+    print(Opt_1.goal_function())
 
     # print(history_args)
-    Opt_1.my_optimization()
+    #Opt_1.my_optimization()
 
 
