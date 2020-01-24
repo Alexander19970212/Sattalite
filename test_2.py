@@ -130,7 +130,7 @@ class Optimization:
 
             self.change_position(name, Number_wall, pos_1, pos_2, pos_3)
 
-        self.test.visual_workspace_poly()
+        #self.test.visual_workspace_poly()
 
     def restricted_area(self):
 
@@ -326,7 +326,8 @@ class Optimization:
     def function_for_opt(self, args):
 
         self.change_position(self.current_body, args[0], args[1], args[2], args[3])
-        np.append(self.goal, self.goal_function())
+        self.goal = np.append(self.goal, self.goal_function())
+        print(self.goal_function())
         return (self.goal_function())
 
     #
@@ -337,10 +338,11 @@ class Optimization:
                 self.current_body = name
                 x0 = self.history_args[self.current_body]
                 res = minimize(self.function_for_opt, x0, method='powell',
-                               options={'maxfev': 30})
+                               options={'maxfev': 15})
                 print(res.x)
 
-        self.test.visual_workspace()
+        self.test.visual_workspace_poly()
+        print(self.goal)
         plt.plot(self.goal)
         plt.ylabel('Goal')
         plt.show()
@@ -363,6 +365,6 @@ if __name__ == '__main__':
     print(Opt_1.goal_function())
 
     # print(history_args)
-    #Opt_1.my_optimization()
+    Opt_1.my_optimization()
 
 
