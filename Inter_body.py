@@ -94,18 +94,26 @@ class Inter:
         for name in self.bodies_new:
             print(self.cernals[name])
             Z = self.bodies_new[name][self.cernals[name], :]
-            verts = [[Z[0], Z[1], Z[2], Z[3]], [Z[4], Z[5], Z[6], Z[7]], [Z[0], Z[1], Z[5], Z[4]],
-                     [Z[2], Z[3], Z[7], Z[6]], [Z[1], Z[2], Z[6], Z[5]],
-                     [Z[4], Z[7], Z[3], Z[0]]]
+            verts = [[Z[0], Z[1], Z[3], Z[2]],
+                     [Z[4], Z[5], Z[7], Z[6]],
+
+                     [Z[0], Z[1], Z[5], Z[4]],
+                     [Z[2], Z[3], Z[7], Z[6]],
+                     [Z[1], Z[3], Z[7], Z[5]],
+                     [Z[4], Z[6], Z[2], Z[0]]]
 
             # plot sides
 
             if name in self.modules:
+            #if name == 'module_1':
+                ax.scatter3D(Z[:, 0], Z[:, 1], Z[:, 2])
                 ax.add_collection3d(Poly3DCollection(verts,
-                                                     facecolors='cyan', linewidths=1, edgecolors='r', alpha=.25))
+                                                     facecolors='red', linewidths=1, edgecolors='r', alpha=.25))
             else:
                 ax.add_collection3d(Poly3DCollection(verts,
-                                                     facecolors='cyan', linewidths=1, edgecolors='r', alpha=.25))
+                                                     facecolors='green', linewidths=1, edgecolors='r', alpha=.25))
+
+                pass
         # ax.scatter(body[:, 0], body[:, 1], body[:, 2], c='b', marker='^')
 
         ax.set_xlabel('X Label')

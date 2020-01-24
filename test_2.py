@@ -40,7 +40,7 @@ class Optimization:
             # print(np.delete(list_bodies[name], [6]).reshape((3, 2)))
             self.creation_workspace(name, np.delete(self.list_bodies[name], [6]).reshape((3, 2)))
 
-        self.test = Inter(self.bodies_test, self.bodies_test.keys(), self.cernals)
+        self.test = Inter(self.bodies_test, self.list_bodies.keys(), self.cernals)
         self.walls_function()
         self.restricted_area()
 
