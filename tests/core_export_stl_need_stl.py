@@ -25,7 +25,7 @@ from OCC.Extend.DataExchange import write_stl_file
 my_torus = BRepPrimAPI_MakeTorus(20., 10.).Shape()
 
 # set the directory where to output the
-stl_output_dir = os.path.abspath(os.path.join("..", "assets", "models"))
+stl_output_dir = os.path.abspath(os.path.join("models"))
 
 # make sure the path exists otherwise OCE get confused
 if not os.path.isdir(stl_output_dir):
