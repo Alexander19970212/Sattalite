@@ -45,6 +45,22 @@ Mat = gp_Mat(0.5, (0.75**0.5), 0,
 trsf.SetRotation(gp_Quaternion(Mat))
 shp.Move(TopLoc_Location(trsf))
 
+def get_faces(_shape):
+    """ return the faces from `_shape`
+    :param _shape: TopoDS_Shape, or a subclass like TopoDS_Solid
+    :return: a list of faces found in `_shape`
+    """
+    topExp = TopExp_Explorer()
+    topExp.Init(_shape, TopAbs_FACE)
+    _faces = []
+
+    while topExp.More():
+        fc = topods_Face(topExp.Current())
+        _faces.append(fc)
+        topExp.Next()
+
+    return _faces
+
 #kode to move
 #trsf = gp_Trsf()
 trsf.SetTranslation(gp_Vec(750, 0, 0))
@@ -52,6 +68,8 @@ shp.Move(TopLoc_Location(trsf))
 
 display.EraseAll()
 display.DisplayShape(shp, update=True)
+
+
 
 props = GProp_GProps()
 brepgprop_VolumeProperties(shp, props)
