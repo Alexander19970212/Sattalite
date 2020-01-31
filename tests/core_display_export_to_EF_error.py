@@ -23,6 +23,9 @@ from OCC.Core.Graphic3d import (Graphic3d_EF_PDF,
                                 Graphic3d_EF_PostScript,
                                 Graphic3d_EF_EnhPostScript)
 
+from OCC.Core.Graphic3d import Pd
+from OCC.Core.
+
 display, start_display, add_menu, add_function_to_menu = init_display()
 my_box = BRepPrimAPI_MakeTorus(40., 20.).Shape()
 

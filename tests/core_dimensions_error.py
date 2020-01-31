@@ -22,16 +22,20 @@ from OCC.Core.AIS import AIS_Shape, AIS_RadiusDimension
 from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeEdge
 from OCC.Display.SimpleGui import init_display
 
+#Попробовать установить версию 2,6 питона
+
+
 display, start_display, add_menu, add_function_to_menu = init_display()
 
 c = gp_Circ(gp_Ax2(gp_Pnt(200., 200., 0.), gp_Dir(0., 0., 1.)), 80)
 ec = BRepBuilderAPI_MakeEdge(c).Edge()
 ais_shp = AIS_Shape(ec)
+print(ais_shp)
 display.Context.Display(ais_shp)
-
+display.Context.Display(ec)
 
 rd = AIS_RadiusDimension(ec)
-#rd.SetArrowSize(12)
+rd.SetArrowSize(12)
 display.Context.Display(rd)
 display.FitAll()
 start_display()
