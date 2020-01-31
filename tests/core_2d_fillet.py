@@ -16,6 +16,9 @@
 ##You should have received a copy of the GNU Lesser General Public License
 ##along with pythonOCC.  If not, see <http://www.gnu.org/licenses/>.
 
+
+#https://github.com/tpaviot/pythonocc-core/blob/0.18.1/examples/core_mesh_volumic.py
+
 from OCC.Core.gp import gp_Pnt, gp_Pln
 from OCC.Core.ChFi2d import ChFi2d_AnaFilletAlgo
 from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeEdge
