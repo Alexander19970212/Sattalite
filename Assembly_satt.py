@@ -7,6 +7,8 @@ from OCC.Extend.DataExchange import read_step_file
 from OCC.Core.BRepGProp import brepgprop_VolumeProperties
 from OCC.Core.BRepOffsetAPI import BRepOffsetAPI_MakeOffsetShape
 import os
+from OCC.Core.BRepBndLib import brepbndlib_Add
+from OCC.Core.Bnd import Bnd_Box
 from OCC.Core.gp import gp_Pnt, gp_Trsf, gp_Vec, gp_Quaternion, gp_Mat
 from OCC.Core.TopLoc import TopLoc_Location
 from OCC.Core.BRepAlgoAPI import BRepAlgoAPI_Fuse, BRepAlgoAPI_Common, BRepAlgoAPI_Section, BRepAlgoAPI_Cut
@@ -45,14 +47,27 @@ Mat = gp_Mat(0.5, (0.75**0.5), 0,
 
 # trsf.SetRotation(gp_Quaternion(Mat))
 # shp.Move(TopLoc_Location(trsf))
+def measure(shape):
+    bbox = Bnd_Box()
+    #bbox.SetGap(tol)
+    #bbox.SetShape(shape)
 
+    brepbndlib_Add(shape, bbox)
+
+    xmin, ymin, zmin, xmax, ymax, zmax = bbox.Get()
+    my_box = BRepPrimAPI_MakeBox(gp_Pnt(xmin, ymin, zmin), gp_Pnt(xmax, ymax, zmax)).Shape()
+
+    #display.SetBackgroundImage('nevers-pont-de-loire.jpg', stretch=True)
+    display.DisplayShape(my_box, color='GREEN', transparency=0.9)
+    print(zmin, zmax, 'zzzzzzzzzzzzz')
 
 def glue_solids(event=None):
     display.EraseAll()
     display.Context.RemoveAll(True)
     # Without common edges
     S1 = read_step_file(os.path.join('part_of_sattelate', 'pribore', 'DAV_WS16.STEP'))
-    #display.DisplayShape(S1, color='BLUE', transparency=0.9)
+    display.DisplayShape(S1, color='BLUE', transparency=0.9)
+    measure(S1)
 
     # the face to glue
     S2 = read_step_file(os.path.join('part_of_sattelate', 'pribore', 'Camara_WS16.STEP'))
