@@ -9,6 +9,7 @@ from OCC.Core.BRepOffsetAPI import BRepOffsetAPI_MakeOffsetShape
 import os
 from OCC.Core.gp import gp_Pnt, gp_Trsf, gp_Vec, gp_Quaternion, gp_Mat
 from OCC.Core.TopLoc import TopLoc_Location
+from OCC.Core.BRepAlgoAPI import BRepAlgoAPI_Fuse, BRepAlgoAPI_Common, BRepAlgoAPI_Section, BRepAlgoAPI_Cut
 
 from OCC.Extend.ShapeFactory import make_wire
 
@@ -31,46 +32,76 @@ display, start_display, add_menu, add_function_to_menu = init_display()
 #     	                                                             c.Blue(),
 #     	                                                             Quantity_TOC_RGB))
 
-shp = read_step_file(os.path.join('part_of_sattelate', 'pribore', 'DAV_WS16.STEP'))
+# shp = read_step_file(os.path.join('part_of_sattelate', 'pribore', 'DAV_WS16.STEP'))
 #BRepOffsetAPI_MakeOffsetShape(shp, 10, 0.1)
 
 #kode to rotation
-trsf = gp_Trsf()
+#trsf = gp_Trsf()
 # vX = gp_Vec(12, 0, 0)
 # vY = gp_Vec(0, 12, 0)
 Mat = gp_Mat(0.5, (0.75**0.5), 0,
              -(0.75**2), 0.5, 0,
              0, 0, 1)
 
-trsf.SetRotation(gp_Quaternion(Mat))
-shp.Move(TopLoc_Location(trsf))
+# trsf.SetRotation(gp_Quaternion(Mat))
+# shp.Move(TopLoc_Location(trsf))
 
-def get_faces(_shape):
-    """ return the faces from `_shape`
-    :param _shape: TopoDS_Shape, or a subclass like TopoDS_Solid
-    :return: a list of faces found in `_shape`
-    """
-    topExp = TopExp_Explorer()
-    topExp.Init(_shape, TopAbs_FACE)
-    _faces = []
 
-    while topExp.More():
-        fc = topods_Face(topExp.Current())
-        _faces.append(fc)
-        topExp.Next()
+def glue_solids(event=None):
+    display.EraseAll()
+    display.Context.RemoveAll(True)
+    # Without common edges
+    S1 = read_step_file(os.path.join('part_of_sattelate', 'pribore', 'DAV_WS16.STEP'))
+    #display.DisplayShape(S1, color='BLUE', transparency=0.9)
 
-    return _faces
+    # the face to glue
+    S2 = read_step_file(os.path.join('part_of_sattelate', 'pribore', 'Camara_WS16.STEP'))
+
+    trsf = gp_Trsf()
+
+    trsf.SetTranslation(gp_Vec(750, 0, 0))
+    S2.Move(TopLoc_Location(trsf))
+
+    fuse_shp = BRepAlgoAPI_Fuse(S1, S2).Shape()
+
+    props = GProp_GProps()
+    brepgprop_VolumeProperties(fuse_shp, props)
+    # Get inertia properties
+    mass = props.Mass()
+    cog = props.CentreOfMass()
+    matrix_of_inertia = props.MatrixOfInertia()
+    # Display inertia properties
+    print("Cube mass = %s" % mass)
+    cog_x, cog_y, cog_z = cog.Coord()
+    print("Center of mass: x = %f;y = %f;z = %f;" % (cog_x, cog_y, cog_z))
+
+
+    display.DisplayShape(fuse_shp)
+    #pstring = 'x: % \n y: % \n z: %' % (cog_x, cog_y, cog_z)
+    pnt = gp_Pnt(cog_x, cog_y, cog_z)
+    # display points
+    display.DisplayShape(pnt, update=True)
+    pnt = gp_Pnt(0, 0, 0)
+    # display points
+    display.DisplayShape(pnt, update=True)
+    #display.DisplayMessage(pnt, pstring)
+    display.FitAll()
+    #S2 += S1
+
+    #display.DisplayShape(S2, color='RED', transparency=0.9)
+
 
 #kode to move
 #trsf = gp_Trsf()
+'''
 trsf.SetTranslation(gp_Vec(750, 0, 0))
 shp.Move(TopLoc_Location(trsf))
 
 display.EraseAll()
 display.DisplayShape(shp, update=True)
+'''
 
-
-
+'''
 props = GProp_GProps()
 brepgprop_VolumeProperties(shp, props)
 # Get inertia properties
@@ -81,5 +112,6 @@ matrix_of_inertia = props.MatrixOfInertia()
 print("Cube mass = %s" % mass)
 cog_x, cog_y, cog_z = cog.Coord()
 print("Center of mass: x = %f;y = %f;z = %f;" % (cog_x, cog_y, cog_z))
-
+'''
+glue_solids()
 start_display()
