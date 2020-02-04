@@ -34,19 +34,19 @@ display, start_display, add_menu, add_function_to_menu = init_display()
 #     	                                                             c.Blue(),
 #     	                                                             Quantity_TOC_RGB))
 
-# shp = read_step_file(os.path.join('part_of_sattelate', 'pribore', 'DAV_WS16.STEP'))
+shp = read_step_file(os.path.join('part_of_sattelate', 'pribore', 'DAV_WS16.STEP'))
 #BRepOffsetAPI_MakeOffsetShape(shp, 10, 0.1)
 
 #kode to rotation
-#trsf = gp_Trsf()
+trsf = gp_Trsf()
 # vX = gp_Vec(12, 0, 0)
 # vY = gp_Vec(0, 12, 0)
 Mat = gp_Mat(0.5, (0.75**0.5), 0,
              -(0.75**2), 0.5, 0,
              0, 0, 1)
 
-# trsf.SetRotation(gp_Quaternion(Mat))
-# shp.Move(TopLoc_Location(trsf))
+trsf.SetRotation(gp_Quaternion(Mat))
+shp.Move(TopLoc_Location(trsf))
 def measure(shape):
     bbox = Bnd_Box()
     #bbox.SetGap(tol)

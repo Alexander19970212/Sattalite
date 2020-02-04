@@ -25,6 +25,7 @@ def get_faces(_shape):
 
     while topExp.More():
         fc = topods_Face(topExp.Current())
+        #print(fc)
         _faces.append(fc)
         topExp.Next()
 
@@ -44,7 +45,7 @@ def tag_faces(_shape, _color, shape_name):
         # centroid of the face
         center_pt = center_boundingbox(f)
         # displays the face in the viewer
-        display.DisplayShape(f, color=_color, transparency=0.9)
+        display.DisplayShape(f, color=_color, transparency=0.5)
         # tag the face in the viewer
         display.DisplayMessage(center_pt, "{0}_nr_{1}".format(shape_name, n))
 
@@ -65,7 +66,7 @@ def glue_solids(event=None):
     tag_faces(facesA, "BLUE", "facesA")
 
     # the face to glue
-    F1 = facesA[5]
+    F1 = facesA[1]
 
     S2 = BRepPrimAPI_MakeBox(gp_Pnt(400., 400., 300.), gp_Pnt(200., 300., 500.)).Shape()
     facesB = get_faces(S2)
@@ -73,7 +74,7 @@ def glue_solids(event=None):
     tag_faces(facesB, "GREEN", "facesB")
 
     # the face to glue of the opposite shape
-    F2 = facesB[4]
+    F2 = facesB[5]
 
     # perform glueing operation
     glue1 = BRepFeat_Gluer(S2, S1)
