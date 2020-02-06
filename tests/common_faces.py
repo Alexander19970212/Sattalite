@@ -1,17 +1,19 @@
 from OCC.Core.BRepFeat import BRepFeat_Gluer
 from OCC.Core.BRepPrimAPI import BRepPrimAPI_MakeBox
-from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeFace
+from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeFace, BRepBuilderAPI_MakeWire, BRepBuilderAPI_MakeEdge
 from OCC.Display.SimpleGui import init_display
 from OCC.Core.LocOpe import LocOpe_FindEdges
 from OCC.Core.TopAbs import TopAbs_FACE
 from OCC.Core.TopExp import TopExp_Explorer
 from OCC.Core.TopLoc import TopLoc_Location
-from OCC.Core.TopoDS import topods_Face
+from OCC.Core.TopoDS import topods_Face, topods_Edge
+from OCC.Core.TopAbs import TopAbs_EDGE, TopAbs_FACE, TopAbs_REVERSED
 from OCC.Core.GProp import GProp_GProps
 from OCC.Core.gp import gp_Pnt, gp_Trsf, gp_Vec, gp_Pln, gp_Dir
-from OCC.Core.BRepGProp import brepgprop_VolumeProperties, brepgprop_SurfaceProperties
+from OCC.Core.BRepGProp import brepgprop_VolumeProperties, brepgprop_SurfaceProperties, brepgprop_LinearProperties
 from OCC.Core.BRepAlgoAPI import BRepAlgoAPI_Fuse, BRepAlgoAPI_Common, BRepAlgoAPI_Section, BRepAlgoAPI_Cut
 from OCC.Core.Bnd import Bnd_Box
+from OCC.Core.TopoDS import topods, TopoDS_Edge, TopoDS_Compound
 import os
 from OCC.Core.BRepBndLib import brepbndlib_Add
 from OCC.Extend.TopologyUtils import TopologyExplorer
@@ -57,15 +59,68 @@ def glue_solids(event=None):
     '''planeZ = BRepBuilderAPI_MakeFace(
         gp_Pln(gp_Pnt(xmin, ymin, zmin), gp_Pnt(xmax, ymax, zmin), gp_Pnt(xmin, ymax, zmin))).Face()'''
     facesS_2 = BRepAlgoAPI_Section(face, S2).Shape()
+    print(facesS_2)
+
+    #aMirroredWire = topods.Wire(facesS_2)
+
+    props = GProp_GProps()
+    brepgprop_LinearProperties(facesS_2, props)
+    # Get inertia properties
+    mass_1 = props.Mass()
+    print(mass_1)
+
+    '''MW1 = BRepBuilderAPI_MakeWire(facesS_2)
+    print(MW1)'''
+
+    # Ex = TopExp_Explorer(facesS_2, TopAbs_EDGE)
+    # print(Ex)
+
+    topExp = TopExp_Explorer()
+    topExp.Init(facesS_2, TopAbs_EDGE)
+    edges = []
+    #https://www.freecadweb.org/wiki/Topological_data_scripting
+
+    while topExp.More():
+        fc = topods_Edge(topExp.Current())
+        # print(fc)
+        edges.append(fc)
+        topExp.Next()
+
+    print(edges)
+
+    MW1 = BRepBuilderAPI_MakeWire()
+    for edge in edges:
+        MW1.Add(edge)
+########################################################################################end
+
+    #MW1 = BRepBuilderAPI_MakeWire(edges[0], edges[1], edges[2], edges[3])
+    if not MW1.IsDone():
+        raise AssertionError("MW1 is not done.")
+    yellow_wire = MW1.Wire()
+    brown_face = BRepBuilderAPI_MakeFace(yellow_wire)
+    display.DisplayColoredShape(brown_face.Face(), 'BLUE')
+
+    props = GProp_GProps()
+    brepgprop_SurfaceProperties(facesS_2, props)
+    # Get inertia properties
+    mass_3 = props.Mass()
+    print(mass_3)
+
+
     display.DisplayShape(p0, update=True)
     display.DisplayShape(facesS_2, update=True)
 
-    # facesA = get_faces(S1)
-    # print(facesA)
-    #display.DisplayShape(S1, update=True)
-    #display.DisplayShape(S2, update=True)
     facesS = BRepAlgoAPI_Section(S1, S2).Shape()
     print(facesS)
+
+    props = GProp_GProps()
+    brepgprop_LinearProperties(facesS, props)
+    # Get inertia properties
+    mass_2 = props.Mass()
+    print(mass_2)
+
+    print((mass_1 - mass_2)/mass_1)
+
 
     display.DisplayShape(facesS, update=True)
 
