@@ -6,8 +6,10 @@ from OCC.Core.LocOpe import LocOpe_FindEdges
 from OCC.Core.TopAbs import TopAbs_FACE
 from OCC.Core.TopExp import TopExp_Explorer
 from OCC.Core.TopLoc import TopLoc_Location
-from OCC.Core.TopoDS import topods_Face, topods_Edge
-from OCC.Core.TopAbs import TopAbs_EDGE, TopAbs_FACE, TopAbs_REVERSED
+from OCC.Core.TopoDS import topods_Face, topods_Edge, topods_Compound, topods_Wire, topods_Shell, topods, \
+    topods_CompSolid, TopoDS_Iterator
+from OCC.Core.TopAbs import TopAbs_EDGE, TopAbs_FACE, TopAbs_REVERSED, TopAbs_SHAPE, TopAbs_COMPOUND, TopAbs_REVERSED, \
+    TopAbs_IN
 from OCC.Core.GProp import GProp_GProps
 from OCC.Core.gp import gp_Pnt, gp_Trsf, gp_Vec, gp_Pln, gp_Dir
 from OCC.Core.BRepGProp import brepgprop_VolumeProperties, brepgprop_SurfaceProperties, brepgprop_LinearProperties
@@ -16,6 +18,10 @@ from OCC.Core.Bnd import Bnd_Box
 from OCC.Core.TopoDS import topods, TopoDS_Edge, TopoDS_Compound
 import os
 from OCC.Core.BRepBndLib import brepbndlib_Add
+from OCC.Extend.DataExchange import read_step_file
+from OCC.Core.ShapeAnalysis import ShapeAnalysis_FreeBounds, ShapeAnalysis_FreeBounds_ConnectEdgesToWires
+from OCC.Core.TopTools import TopTools_HSequenceOfShape, TopTools_SequenceOfShape, \
+    Handle_TopTools_HSequenceOfShape_Create, Handle_TopTools_HSequenceOfShape_DownCast, Handle_TopTools_HSequenceOfShape_IsNull
 from OCC.Extend.TopologyUtils import TopologyExplorer
 
 from OCC.Extend.ShapeFactory import center_boundingbox
@@ -46,22 +52,24 @@ def glue_solids(event=None):
     display.Context.RemoveAll(True)
     # Without common edges
     S1 = BRepPrimAPI_MakeBox(gp_Pnt(500., 500., 0.), gp_Pnt(100., 250., 300.)).Shape()
-    S2 = BRepPrimAPI_MakeBox(gp_Pnt(300., 300., 300.), gp_Pnt(600., 600., 600.)).Shape()
+    # S2 = BRepPrimAPI_MakeBox(gp_Pnt(300., 300., 300.), gp_Pnt(600., 600., 600.)).Shape()
+    S2 = read_step_file(os.path.join('..', 'part_of_sattelate', 'pribore', 'UKV.STEP'))
     bbox = Bnd_Box()
     brepbndlib_Add(S2, bbox)
     xmin, ymin, zmin, xmax, ymax, zmax = bbox.Get()
-    p0 = gp_Pnt(xmin+(xmax-xmin)/2, ymin + (ymax-ymin)/2, zmin)
+    p0 = gp_Pnt(xmin + (xmax - xmin) / 2, ymin + (ymax - ymin) / 2, zmin)
 
     vnorm = gp_Dir(0, 0, 1)
     pln = gp_Pln(p0, vnorm)
-    face = BRepBuilderAPI_MakeFace(pln, -(xmax-xmin)/2-1, (xmax-xmin)/2+1, -(ymax-ymin)/2-1, (ymax-ymin)/2+1).Face()
-    #face = BRepBuilderAPI_MakeFace(pln, -10, 10, -10,10).Face()
+    face = BRepBuilderAPI_MakeFace(pln, -(xmax - xmin) / 2 - 1, (xmax - xmin) / 2 + 1, -(ymax - ymin) / 2 - 1,
+                                   (ymax - ymin) / 2 + 1).Face()
+    # face = BRepBuilderAPI_MakeFace(pln, -10, 10, -10,10).Face()
     '''planeZ = BRepBuilderAPI_MakeFace(
         gp_Pln(gp_Pnt(xmin, ymin, zmin), gp_Pnt(xmax, ymax, zmin), gp_Pnt(xmin, ymax, zmin))).Face()'''
     facesS_2 = BRepAlgoAPI_Section(face, S2).Shape()
-    print(facesS_2)
-
-    #aMirroredWire = topods.Wire(facesS_2)
+    # print(facesS_2)
+    display.DisplayShape(facesS_2, update=True)
+    # aMirroredWire = topods.Wire(facesS_2)
 
     props = GProp_GProps()
     brepgprop_LinearProperties(facesS_2, props)
@@ -69,13 +77,52 @@ def glue_solids(event=None):
     mass_1 = props.Mass()
     print(mass_1)
 
-    '''MW1 = BRepBuilderAPI_MakeWire(facesS_2)
-    print(MW1)'''
+    topExp = TopoDS_Iterator()
+    topExp.Initialize(facesS_2)
+    shapes = []
+    # https://www.freecadweb.org/wiki/Topological_data_scripting
+    edges = TopTools_HSequenceOfShape()
+    edges_handle = Handle_TopTools_HSequenceOfShape_DownCast(edges)
+
+    wires = TopTools_HSequenceOfShape()
+    wires_handle = Handle_TopTools_HSequenceOfShape_DownCast(wires)
+    # seq = TopTools_HSequenceOfShape()
+
+    while topExp.More():
+        # print(topExp.Value())
+        # fc = topods_Face(topExp.Current())
+        # print(fc)
+        shapes.append(topExp.Value())
+        topExp.Next()
+
+    print(shapes)
+    #############################################
+    ends_edges = []
+
+    for num, edge in  enumerate(shapes):
+        ends_edges.append([])
+
+
+    #############################################
+
+    '''for edge in shapes: edges.Append(edge)
+    ShapeAnalysis_FreeBounds.ConnectEdgesToWires(edges_handle, 1e-3, True, wires_handle)
+    print(edges_handle)
+    print(wires_handle)'''
+    #wires = wires_handle.GetObject()
+
+    # wires = TopTools_HSequenceOfShape()
+    '''wires = ShapeAnalysis_FreeBounds.ConnectEdgesToWires(facesS_2,
+                                                         1.0e-7, False)'''
+    # ShapeAnalysis_FreeBounds.ConnectEdgesToWires(shapes, 1.0e-7, False, wires)
+    print(wires)
+    # MW1 = BRepBuilderAPI_MakeWire(facesS_2)
+    # print(MW1)
 
     # Ex = TopExp_Explorer(facesS_2, TopAbs_EDGE)
     # print(Ex)
 
-    topExp = TopExp_Explorer()
+    '''topExp = TopExp_Explorer()
     topExp.Init(facesS_2, TopAbs_EDGE)
     edges = []
     #https://www.freecadweb.org/wiki/Topological_data_scripting
@@ -104,10 +151,9 @@ def glue_solids(event=None):
     brepgprop_SurfaceProperties(facesS_2, props)
     # Get inertia properties
     mass_3 = props.Mass()
-    print(mass_3)
+    print(mass_3)'''
 
-
-    display.DisplayShape(p0, update=True)
+    '''display.DisplayShape(p0, update=True)
     display.DisplayShape(facesS_2, update=True)
 
     facesS = BRepAlgoAPI_Section(S1, S2).Shape()
@@ -122,7 +168,7 @@ def glue_solids(event=None):
     print((mass_1 - mass_2)/mass_1)
 
 
-    display.DisplayShape(facesS, update=True)
+    display.DisplayShape(facesS, update=True)'''
 
     '''#t = TopologyExplorer(facesS)
     props = GProp_GProps()

@@ -1,15 +1,15 @@
 from OCC.Core.gp import gp_Pnt, gp_Pln
 from OCC.Core.ChFi2d import ChFi2d_AnaFilletAlgo
-from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeEdge
+from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeEdge, BRepBuilderAPI_MakeFace, BRepBuilderAPI_MakeWire
 from OCC.Core.BRepPrimAPI import BRepPrimAPI_MakeBox
 from OCC.Core.GProp import GProp_GProps
 from OCC.Extend.DataExchange import read_step_file
-from OCC.Core.BRepGProp import brepgprop_VolumeProperties
+from OCC.Core.BRepGProp import brepgprop_VolumeProperties, brepgprop_SurfaceProperties, brepgprop_LinearProperties
 from OCC.Core.BRepOffsetAPI import BRepOffsetAPI_MakeOffsetShape
 import os
 from OCC.Core.BRepBndLib import brepbndlib_Add
 from OCC.Core.Bnd import Bnd_Box
-from OCC.Core.gp import gp_Pnt, gp_Trsf, gp_Vec, gp_Quaternion, gp_Mat
+from OCC.Core.gp import gp_Pnt, gp_Trsf, gp_Vec, gp_Quaternion, gp_Mat, gp_Dir
 from OCC.Core.TopLoc import TopLoc_Location
 from OCC.Core.BRepAlgoAPI import BRepAlgoAPI_Fuse, BRepAlgoAPI_Common, BRepAlgoAPI_Section, BRepAlgoAPI_Cut
 
@@ -17,6 +17,9 @@ from OCC.Extend.ShapeFactory import make_wire
 import random
 from OCC.Display.SimpleGui import init_display
 from scipy.spatial.transform import Rotation as R
+from OCC.Core.TopAbs import TopAbs_EDGE, TopAbs_FACE
+from OCC.Core.TopoDS import topods_Face, topods_Edge
+from OCC.Core.TopExp import TopExp_Explorer
 from OCC.Extend.DataExchange import read_step_file_with_names_colors
 from OCC.Core.Quantity import Quantity_Color, Quantity_TOC_RGB
 
@@ -35,6 +38,7 @@ class Balance_mass:
 
 
         self.dimensoins = {}
+        self.profiles = {}
         self.display, self.start_display, self.add_menu, self.add_function_to_menu = init_display()
         for model in modules:
             self.modules[model[2]] = read_step_file(os.path.join(model[0], model[1], model[2]))
@@ -44,7 +48,39 @@ class Balance_mass:
             brepbndlib_Add(self.modules[model], bbox)
             xmin, ymin, zmin, xmax, ymax, zmax = bbox.Get()
             self.dimensoins[model] = [xmin, xmax, ymin, ymax, zmin, zmax]
+            p0 = gp_Pnt(xmin + (xmax - xmin) / 2, ymin + (ymax - ymin) / 2, zmin)
 
+            vnorm = gp_Dir(0, 0, 1)
+            pln = gp_Pln(p0, vnorm)
+            face = BRepBuilderAPI_MakeFace(pln, -(xmax - xmin) / 2 - 1, (xmax - xmin) / 2 + 1, -(ymax - ymin) / 2 - 1,
+                                           (ymax - ymin) / 2 + 1).Face()
+            facesS_2 = BRepAlgoAPI_Section(face, self.modules[model]).Shape()
+            props = GProp_GProps()
+            brepgprop_LinearProperties(facesS_2, props)
+            mass_1 = props.Mass()
+            topExp = TopExp_Explorer()
+            topExp.Init(facesS_2, TopAbs_EDGE)
+            edges = []
+            while topExp.More():
+                fc = topods_Edge(topExp.Current())
+                # print(fc)
+                edges.append(fc)
+                topExp.Next()
+            MW1 = BRepBuilderAPI_MakeWire()
+            for edge in edges:
+                MW1.Add(edge)
+            '''if not MW1.IsDone():
+                raise AssertionError("MW1 is not done.")'''
+            yellow_wire = MW1.Wire()
+            brown_face = BRepBuilderAPI_MakeFace(yellow_wire)
+            #display.DisplayColoredShape(brown_face.Face(), 'BLUE')
+            props = GProp_GProps()
+            brepgprop_SurfaceProperties(brown_face, props)
+            # Get inertia properties
+            mass_3 = props.Mass()
+            self.profiles[model] = [mass_1, mass_3]
+
+        print(self.profiles)
 
     def move_frame(self):
         self.frame = read_step_file(os.path.join('part_of_sattelate', 'karkase', self.name_frame))
