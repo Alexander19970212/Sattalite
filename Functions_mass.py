@@ -48,7 +48,7 @@ class Balance_mass:
             brepbndlib_Add(self.modules[model], bbox)
             xmin, ymin, zmin, xmax, ymax, zmax = bbox.Get()
             self.dimensoins[model] = [xmin, xmax, ymin, ymax, zmin, zmax]
-            p0 = gp_Pnt(xmin + (xmax - xmin) / 2, ymin + (ymax - ymin) / 2, zmin)
+            '''p0 = gp_Pnt(xmin + (xmax - xmin) / 2, ymin + (ymax - ymin) / 2, zmin)
 
             vnorm = gp_Dir(0, 0, 1)
             pln = gp_Pln(p0, vnorm)
@@ -68,17 +68,17 @@ class Balance_mass:
                 topExp.Next()
             MW1 = BRepBuilderAPI_MakeWire()
             for edge in edges:
-                MW1.Add(edge)
+                MW1.Add(edge)'''
             '''if not MW1.IsDone():
                 raise AssertionError("MW1 is not done.")'''
-            yellow_wire = MW1.Wire()
+            '''yellow_wire = MW1.Wire()
             brown_face = BRepBuilderAPI_MakeFace(yellow_wire)
             #display.DisplayColoredShape(brown_face.Face(), 'BLUE')
             props = GProp_GProps()
             brepgprop_SurfaceProperties(brown_face, props)
             # Get inertia properties
             mass_3 = props.Mass()
-            self.profiles[model] = [mass_1, mass_3]
+            self.profiles[model] = [mass_1, mass_3]'''
 
         print(self.profiles)
 
