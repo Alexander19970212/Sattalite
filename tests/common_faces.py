@@ -3,13 +3,14 @@ from OCC.Core.BRepPrimAPI import BRepPrimAPI_MakeBox
 from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeFace, BRepBuilderAPI_MakeWire, BRepBuilderAPI_MakeEdge
 from OCC.Display.SimpleGui import init_display
 from OCC.Core.LocOpe import LocOpe_FindEdges
-from OCC.Core.TopAbs import TopAbs_FACE
+from OCC.Core.TopAbs import TopAbs_FACE, TopAbs_VERTEX
 from OCC.Core.TopExp import TopExp_Explorer
 from OCC.Core.TopLoc import TopLoc_Location
 from OCC.Core.TopoDS import topods_Face, topods_Edge, topods_Compound, topods_Wire, topods_Shell, topods, \
-    topods_CompSolid, TopoDS_Iterator
+    topods_CompSolid, TopoDS_Iterator, topods_Vertex
 from OCC.Core.TopAbs import TopAbs_EDGE, TopAbs_FACE, TopAbs_REVERSED, TopAbs_SHAPE, TopAbs_COMPOUND, TopAbs_REVERSED, \
     TopAbs_IN
+from OCCUtils.Topology import Topo
 from OCC.Core.GProp import GProp_GProps
 from OCC.Core.gp import gp_Pnt, gp_Trsf, gp_Vec, gp_Pln, gp_Dir
 from OCC.Core.BRepGProp import brepgprop_VolumeProperties, brepgprop_SurfaceProperties, brepgprop_LinearProperties
@@ -19,6 +20,7 @@ from OCC.Core.TopoDS import topods, TopoDS_Edge, TopoDS_Compound
 import os
 from OCC.Core.BRepBndLib import brepbndlib_Add
 from OCC.Extend.DataExchange import read_step_file
+from OCC.Core.BRep import BRep_Tool_Pnt
 from OCC.Core.ShapeAnalysis import ShapeAnalysis_FreeBounds, ShapeAnalysis_FreeBounds_ConnectEdgesToWires
 from OCC.Core.TopTools import TopTools_HSequenceOfShape, TopTools_SequenceOfShape, \
     Handle_TopTools_HSequenceOfShape_Create, Handle_TopTools_HSequenceOfShape_DownCast, Handle_TopTools_HSequenceOfShape_IsNull
@@ -68,196 +70,78 @@ def glue_solids(event=None):
         gp_Pln(gp_Pnt(xmin, ymin, zmin), gp_Pnt(xmax, ymax, zmin), gp_Pnt(xmin, ymax, zmin))).Face()'''
     facesS_2 = BRepAlgoAPI_Section(face, S2).Shape()
     # print(facesS_2)
-    display.DisplayShape(facesS_2, update=True)
-    # aMirroredWire = topods.Wire(facesS_2)
+    #display.DisplayShape(facesS_2, update=True)
 
-    props = GProp_GProps()
-    brepgprop_LinearProperties(facesS_2, props)
-    # Get inertia properties
-    mass_1 = props.Mass()
-    print(mass_1)
+    section_edges = list(Topo(facesS_2).edges())
+    print(len(section_edges))
 
-    topExp = TopoDS_Iterator()
-    topExp.Initialize(facesS_2)
-    shapes = []
-    # https://www.freecadweb.org/wiki/Topological_data_scripting
+    '''toptool_seq_shape = TopTools_SequenceOfShape()
+    for edge in section_edges:
+        toptool_seq_shape.Append(edge)'''
 
+    Wire_c = BRepBuilderAPI_MakeWire()
 
-    while topExp.More():
-        # print(topExp.Value())
-        # fc = topods_Face(topExp.Current())
-        # print(fc)
-        shapes.append(topExp.Value())
-        topExp.Next()
+    Wire_c.Add(section_edges[0])
+    ex = TopExp_Explorer(section_edges[0], TopAbs_VERTEX)
 
-    print(shapes)
+    # no need for a loop since we know for a fact that
+    # the edge has only one start and one end
+    c = ex.Current()
+    cv = topods_Vertex(c)
+    v0 = BRep_Tool_Pnt(cv)
+    ex.Next()
+    c = ex.Current()
+    cv = topods_Vertex(c)
+    v1 = BRep_Tool_Pnt(cv)
+    section_edges.pop(0)
 
-    '''p1 = gp_Pnt()
-    p2 = gp_Pnt(1, 0, 0)
-    e1 = BRepBuilderAPI_MakeEdge(p1, p2).Edge()
+    while len(section_edges) > 0:
 
-    p3 = gp_Pnt(1, 1, 0)
-    e2 = BRepBuilderAPI_MakeEdge(p2, p3).Edge()
+        new_list = []
 
-    seq = TopTools_HSequenceOfShape()
-    seq.Append(e1)
-    seq.Append(e2)
-    shapes = seq
-    print(shapes)'''
-    ############################################
-    '''edges = TopTools_HSequenceOfShape()
-    edges_handle = Handle_TopTools_HSequenceOfShape_DownCast(edges)
-    print('00000')
+        for edges in section_edges:
+            Wire_c.Add(edges)
+            ex = TopExp_Explorer(edges, TopAbs_VERTEX)
+            c = ex.Current()
+            cv = topods_Vertex(c)
+            End_1 = BRep_Tool_Pnt(cv)
+            ex.Next()
+            c = ex.Current()
+            cv = topods_Vertex(c)
+            End_2 = BRep_Tool_Pnt(cv)
 
-    wires = TopTools_HSequenceOfShape()
-    wires_handle = Handle_TopTools_HSequenceOfShape_DownCast(wires)
+            if End_1.X() == v0.X() and End_1.Y() == v0.Y() and End_1.Z() == v0.Z():
+                Wire_c.Add(edges)
+                v0 = End_2
+            elif End_1.X() == v1.X() and End_1.Y() == v1.Y() and End_1.Z() == v1.Z():
+                Wire_c.Add(edges)
+                v1 = End_2
+            elif End_2.X() == v0.X() and End_2.Y() == v0.Y() and End_2.Z() == v0.Z():
+                Wire_c.Add(edges)
+                v0 = End_1
+            elif End_2.X() == v1.X() and End_2.Y() == v1.Y() and End_2.Z() == v1.Z():
+                Wire_c.Add(edges)
+                v1 = End_1
+            else:
+                new_list.append(edges)
 
-    # The edges are copied to the sequence
-    for edge in shapes: edges.Append(edge)
-    print('%%%%%%%%%%%%%%%%%%%%%%%')
-
-    # A wire is formed by connecting the edges
-    ShapeAnalysis_FreeBounds.ConnectEdgesToWires(edges_handle, True, wires_handle)
-    #ShapeAnalysis_FreeBounds.ConnectWiresToWires(shapes, True, wires_handle)
-    #wires = wires_handle.GetObject()
-
-    # From each wire a face is created
-    print("        number of faces = %d" % wires_handle.Length())'''
-    ######################################
-    print(len(shapes))
-    p1 = gp_Pnt()
-    p2 = gp_Pnt(1, 0, 0)
-    e1 = BRepBuilderAPI_MakeEdge(p1, p2).Edge()
-
-    p3 = gp_Pnt(1, 1, 0)
-    e2 = BRepBuilderAPI_MakeEdge(p2, p3).Edge()
-
-    seq = TopTools_HSequenceOfShape()
-    seq.Append(e1)
-    seq.Append(e2)
-
-    toptool_seq_shape = TopTools_SequenceOfShape()
-    for edge in shapes:
-        toptool_seq_shape.Append(edge)
-
-    edges = TopTools_HSequenceOfShape(toptool_seq_shape)
-    wires_handle = TopTools_SequenceOfShape()
-    print(wires_handle)
-    print(edges)
-
-    wires = ShapeAnalysis_FreeBounds.ConnectEdgesToWires(toptool_seq_shape,
-                                                         1.0e-7, True)
-    #ShapeAnalysis_FreeBounds.ConnectEdgesToWires(edges = seq, shared=True, wires=wires_handle)
-    ##############
-
-    '''p1 = gp_Pnt()
-    p2 = gp_Pnt(1, 0, 0)
-    e1 = BRepBuilderAPI_MakeEdge(p1, p2).Edge()
-
-    p3 = gp_Pnt(1, 1, 0)
-    e2 = BRepBuilderAPI_MakeEdge(p2, p3).Edge()
-
-    seq = TopTools_HSequenceOfShape()
-    seq.Append(e1)
-    seq.Append(e2)
-
-    print(seq)
-
-    #wires = ShapeAnalysis_FreeBounds.ConnectEdgesToWires(seq, 1.0e-7, False)
-    wires = TopTools_HSequenceOfShape()
-    ShapeAnalysis_FreeBounds.ConnectEdgesToWires(seq,
-                                                 1.0e-7, False, wires)
-
-    #display.DisplayShape(wires, update=True)
-    print(wires.Length())
-    #brown_face = BRepBuilderAPI_MakeFace(wires)
-    #display.DisplayColoredShape(brown_face.Face(), 'BLUE')'''
+        section_edges = new_list
+        print('+')
 
 
-    #############################################
 
-    '''for edge in shapes: edges.Append(edge)
-    #ShapeAnalysis_FreeBounds.ConnectEdgesToWires(edges_handle, False)
-    wires = ShapeAnalysis_FreeBounds.ConnectEdgesToWires(edges, True)
-    print(edges_handle)
-    print(wires_handle)
-    wires = wires_handle.GetObject()'''
 
-    #wires = TopTools_HSequenceOfShape()
-    '''wires = ShapeAnalysis_FreeBounds.ConnectEdgesToWires(facesS_2,
-                                                         1.0e-7, False)'''
-    # ShapeAnalysis_FreeBounds.ConnectEdgesToWires(shapes, 1.0e-7, False, wires)
-    #print(wires)
-    # MW1 = BRepBuilderAPI_MakeWire(facesS_2)
-    # print(MW1)
 
-    # Ex = TopExp_Explorer(facesS_2, TopAbs_EDGE)
-    # print(Ex)
 
-    '''topExp = TopExp_Explorer()
-    topExp.Init(facesS_2, TopAbs_EDGE)
-    edges = []
-    #https://www.freecadweb.org/wiki/Topological_data_scripting
-
-    while topExp.More():
-        fc = topods_Edge(topExp.Current())
-        # print(fc)
-        edges.append(fc)
-        topExp.Next()
-
-    print(edges)
-
-    MW1 = BRepBuilderAPI_MakeWire()
-    for edge in edges:
-        MW1.Add(edge)
-########################################################################################end
-
-    #MW1 = BRepBuilderAPI_MakeWire(edges[0], edges[1], edges[2], edges[3])
-    if not MW1.IsDone():
-        raise AssertionError("MW1 is not done.")
-    yellow_wire = MW1.Wire()
+    yellow_wire = Wire_c.Wire()
     brown_face = BRepBuilderAPI_MakeFace(yellow_wire)
     display.DisplayColoredShape(brown_face.Face(), 'BLUE')
 
-    props = GProp_GProps()
-    brepgprop_SurfaceProperties(facesS_2, props)
-    # Get inertia properties
-    mass_3 = props.Mass()
-    print(mass_3)'''
-
-    '''display.DisplayShape(p0, update=True)
-    display.DisplayShape(facesS_2, update=True)
-
-    facesS = BRepAlgoAPI_Section(S1, S2).Shape()
-    print(facesS)
-
-    props = GProp_GProps()
-    brepgprop_LinearProperties(facesS, props)
-    # Get inertia properties
-    mass_2 = props.Mass()
-    print(mass_2)
-
-    print((mass_1 - mass_2)/mass_1)
+    #myWireProfile = Wire.Wire()
+    #myFaceProfile = BRepBuilderAPI_MakeFace(myWireProfile)
+    #display.DisplayShape(myFaceProfile, color='BLUE', transparency=0.9)
 
 
-    display.DisplayShape(facesS, update=True)'''
-
-    '''#t = TopologyExplorer(facesS)
-    props = GProp_GProps()
-    #for face in t.faces():
-    brepgprop_SurfaceProperties(facesS, props)
-    face_surf = props.Mass()
-    #shp_idx = 1
-    print("Surface for face nbr %i : %f" % ('1', face_surf))'''
-
-    '''t = TopologyExplorer(the_shape)
-    props = GProp_GProps()
-    shp_idx = 1
-    for face in t.faces():
-        brepgprop_SurfaceProperties(face, props)
-        face_surf = props.Mass()
-        print("Surface for face nbr %i : %f" % (shp_idx, face_surf))
-        shp_idx += 1'''
 
 
 if __name__ == "__main__":

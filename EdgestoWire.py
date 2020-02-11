@@ -1,6 +1,7 @@
 import os
 
-import OCC.Core.gp
+from OCC.Core.gp import gp_Pln, gp_Pnt, gp_Dir
+
 import OCC.Core.Geom
 #import OCC.Core.Utils
 import OCC.Core.Bnd
@@ -66,9 +67,9 @@ while section_height <= maximum_height:
 
     # A horizontal plane is created from which a face is constructed to intersect with
     # the building. The face is transparently displayed along with the building.
-    section_plane = OCC.Core.gp.gp_Pln(
-        OCC.Core.gp.gp_Pnt(0, 0, section_height),
-        OCC.Core.gp.gp_Dir(0, 0, 1)
+    section_plane = gp_Pln(
+        gp_Pnt(0, 0, section_height),
+        gp_Dir(0, 0, 1)
     )
     section_face = OCC.Core.BRepBuilderAPI.BRepBuilderAPI_MakeFace(section_plane, -10, 10, -10, 10).Face()
 
