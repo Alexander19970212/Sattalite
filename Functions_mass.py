@@ -12,7 +12,29 @@ from OCC.Core.Bnd import Bnd_Box
 from OCC.Core.gp import gp_Pnt, gp_Trsf, gp_Vec, gp_Quaternion, gp_Mat, gp_Dir
 from OCC.Core.TopLoc import TopLoc_Location
 from OCC.Core.BRepAlgoAPI import BRepAlgoAPI_Fuse, BRepAlgoAPI_Common, BRepAlgoAPI_Section, BRepAlgoAPI_Cut
-
+from OCC.Core.BRepFeat import BRepFeat_Gluer
+from OCC.Core.BRepPrimAPI import BRepPrimAPI_MakeBox
+from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeFace, BRepBuilderAPI_MakeWire, BRepBuilderAPI_MakeEdge
+from OCC.Display.SimpleGui import init_display
+from OCC.Core.LocOpe import LocOpe_FindEdges
+from OCC.Core.TopAbs import TopAbs_FACE, TopAbs_VERTEX
+from OCC.Core.TopExp import TopExp_Explorer
+from OCC.Core.TopLoc import TopLoc_Location
+from OCC.Core.TopoDS import topods_Face, topods_Edge, topods_Compound, topods_Wire, topods_Shell, topods, \
+    topods_CompSolid, TopoDS_Iterator, topods_Vertex
+from OCC.Core.TopAbs import TopAbs_EDGE, TopAbs_FACE, TopAbs_REVERSED, TopAbs_SHAPE, TopAbs_COMPOUND, TopAbs_REVERSED, \
+    TopAbs_IN
+from OCCUtils.Topology import Topo
+from OCC.Core.GProp import GProp_GProps
+from OCC.Core.gp import gp_Pnt, gp_Trsf, gp_Vec, gp_Pln, gp_Dir
+from OCC.Core.BRepGProp import brepgprop_VolumeProperties, brepgprop_SurfaceProperties, brepgprop_LinearProperties
+from OCC.Core.BRepAlgoAPI import BRepAlgoAPI_Fuse, BRepAlgoAPI_Common, BRepAlgoAPI_Section, BRepAlgoAPI_Cut
+from OCC.Core.Bnd import Bnd_Box
+from OCC.Core.TopoDS import topods, TopoDS_Edge, TopoDS_Compound
+import os
+from OCC.Core.BRepBndLib import brepbndlib_Add
+from OCC.Extend.DataExchange import read_step_file
+from OCC.Core.BRep import BRep_Tool_Pnt
 from OCC.Extend.ShapeFactory import make_wire
 import random
 from OCC.Display.SimpleGui import init_display
@@ -44,43 +66,118 @@ class Balance_mass:
             self.modules[model[2]] = read_step_file(os.path.join(model[0], model[1], model[2]))
 
         for model in self.modules:
-            bbox = Bnd_Box()
-            brepbndlib_Add(self.modules[model], bbox)
-            xmin, ymin, zmin, xmax, ymax, zmax = bbox.Get()
-            self.dimensoins[model] = [xmin, xmax, ymin, ymax, zmin, zmax]
-            '''p0 = gp_Pnt(xmin + (xmax - xmin) / 2, ymin + (ymax - ymin) / 2, zmin)
-
-            vnorm = gp_Dir(0, 0, 1)
-            pln = gp_Pln(p0, vnorm)
-            face = BRepBuilderAPI_MakeFace(pln, -(xmax - xmin) / 2 - 1, (xmax - xmin) / 2 + 1, -(ymax - ymin) / 2 - 1,
-                                           (ymax - ymin) / 2 + 1).Face()
-            facesS_2 = BRepAlgoAPI_Section(face, self.modules[model]).Shape()
-            props = GProp_GProps()
-            brepgprop_LinearProperties(facesS_2, props)
-            mass_1 = props.Mass()
-            topExp = TopExp_Explorer()
-            topExp.Init(facesS_2, TopAbs_EDGE)
-            edges = []
-            while topExp.More():
-                fc = topods_Edge(topExp.Current())
-                # print(fc)
-                edges.append(fc)
-                topExp.Next()
-            MW1 = BRepBuilderAPI_MakeWire()
-            for edge in edges:
-                MW1.Add(edge)'''
-            '''if not MW1.IsDone():
-                raise AssertionError("MW1 is not done.")'''
-            '''yellow_wire = MW1.Wire()
-            brown_face = BRepBuilderAPI_MakeFace(yellow_wire)
-            #display.DisplayColoredShape(brown_face.Face(), 'BLUE')
-            props = GProp_GProps()
-            brepgprop_SurfaceProperties(brown_face, props)
-            # Get inertia properties
-            mass_3 = props.Mass()
-            self.profiles[model] = [mass_1, mass_3]'''
+            print(model)
+            self.profiles[model] = [self.glue_solids(self.modules[model])]
 
         print(self.profiles)
+
+    def glue_solids(self, S2):
+
+
+        bbox = Bnd_Box()
+        brepbndlib_Add(S2, bbox)
+        xmin, ymin, zmin, xmax, ymax, zmax = bbox.Get()
+        p0 = gp_Pnt(xmin + (xmax - xmin) / 2, ymin + (ymax - ymin) / 2, zmin+0.1)
+
+        vnorm = gp_Dir(0, 0, 1)
+        pln = gp_Pln(p0, vnorm)
+        face = BRepBuilderAPI_MakeFace(pln, -(xmax - xmin) / 2 - 1, (xmax - xmin) / 2 + 1, -(ymax - ymin) / 2 - 1,
+                                       (ymax - ymin) / 2 + 1).Face()
+
+        facesS_2 = BRepAlgoAPI_Section(face, S2).Shape()
+
+        section_edges = list(Topo(facesS_2).edges())
+        print(len(section_edges))
+
+        Wire_c = BRepBuilderAPI_MakeWire()
+        prep_list = []
+        Wire_c.Add(section_edges[0])
+        prep_list.append(section_edges[0])
+        ex = TopExp_Explorer(section_edges[0], TopAbs_VERTEX)
+
+        # no need for a loop since we know for a fact that
+        # the edge has only one start and one end
+        c = ex.Current()
+        cv = topods_Vertex(c)
+        v0 = BRep_Tool_Pnt(cv)
+        ex.Next()
+        c = ex.Current()
+        cv = topods_Vertex(c)
+        v1 = BRep_Tool_Pnt(cv)
+        section_edges.pop(0)
+        flag = 0
+        wires = []
+
+        while len(section_edges) > 0:
+
+            new_list = []
+
+            for edges in section_edges:
+                # Wire_c.Add(edges)
+                ex = TopExp_Explorer(edges, TopAbs_VERTEX)
+                c = ex.Current()
+                cv = topods_Vertex(c)
+                End_1 = BRep_Tool_Pnt(cv)
+                ex.Next()
+                c = ex.Current()
+                cv = topods_Vertex(c)
+                End_2 = BRep_Tool_Pnt(cv)
+
+                if End_1.X() == v0.X() and End_1.Y() == v0.Y() and End_1.Z() == v0.Z():
+                    Wire_c.Add(edges)
+                    v0 = End_2
+                    flag = 0
+                elif End_1.X() == v1.X() and End_1.Y() == v1.Y() and End_1.Z() == v1.Z():
+                    Wire_c.Add(edges)
+                    v1 = End_2
+                    flag = 0
+                elif End_2.X() == v0.X() and End_2.Y() == v0.Y() and End_2.Z() == v0.Z():
+                    Wire_c.Add(edges)
+                    v0 = End_1
+                    flag = 0
+                elif End_2.X() == v1.X() and End_2.Y() == v1.Y() and End_2.Z() == v1.Z():
+                    Wire_c.Add(edges)
+                    v1 = End_1
+                    flag = 0
+                else:
+                    new_list.append(edges)
+
+            flag += 1
+            section_edges = new_list
+
+            if flag >= 5:
+                #print('number_ostalos', len(section_edges))
+                wires.append(Wire_c.Wire())
+                Wire_c = BRepBuilderAPI_MakeWire()
+
+                Wire_c.Add(section_edges[0])
+                ex = TopExp_Explorer(section_edges[0], TopAbs_VERTEX)
+
+                # no need for a loop since we know for a fact that
+                # the edge has only one start and one end
+                c = ex.Current()
+                cv = topods_Vertex(c)
+                v0 = BRep_Tool_Pnt(cv)
+                ex.Next()
+                c = ex.Current()
+                cv = topods_Vertex(c)
+                v1 = BRep_Tool_Pnt(cv)
+                section_edges.pop(0)
+                flag = 0
+
+        wires.append(Wire_c.Wire())
+
+        areas = []
+        props = GProp_GProps()
+
+        for wire in wires:
+            brown_face = BRepBuilderAPI_MakeFace(wire)
+            brown_face = brown_face.Face()
+            # props = GProp_GProps()
+            brepgprop_SurfaceProperties(brown_face, props)
+            areas.append(props.Mass())
+
+        return max(areas)
 
     def move_frame(self):
         self.frame = read_step_file(os.path.join('part_of_sattelate', 'karkase', self.name_frame))

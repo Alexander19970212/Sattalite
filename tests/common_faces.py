@@ -62,11 +62,12 @@ def glue_solids(event=None):
     # Without common edges
     S1 = BRepPrimAPI_MakeBox(gp_Pnt(500., 500., 0.), gp_Pnt(100., 250., 300.)).Shape()
     # S2 = BRepPrimAPI_MakeBox(gp_Pnt(300., 300., 300.), gp_Pnt(600., 600., 600.)).Shape()
-    S2 = read_step_file(os.path.join('..', 'part_of_sattelate', 'pribore', 'DAV_WS16.STEP'))
+    S2 = read_step_file(os.path.join('..', 'part_of_sattelate', 'pribore', 'Camara_WS16.STEP'))
     bbox = Bnd_Box()
     brepbndlib_Add(S2, bbox)
     xmin, ymin, zmin, xmax, ymax, zmax = bbox.Get()
-    p0 = gp_Pnt(xmin + (xmax - xmin) / 2, ymin + (ymax - ymin) / 2, zmin)
+    print(bbox.Get())
+    p0 = gp_Pnt(xmin + (xmax - xmin) / 2, ymin + (ymax - ymin) / 2, zmin+0.01)
 
     vnorm = gp_Dir(0, 0, 1)
     pln = gp_Pln(p0, vnorm)
@@ -77,6 +78,8 @@ def glue_solids(event=None):
         gp_Pln(gp_Pnt(xmin, ymin, zmin), gp_Pnt(xmax, ymax, zmin), gp_Pnt(xmin, ymax, zmin))).Face()'''
     facesS_2 = BRepAlgoAPI_Section(face, S2).Shape()
     # print(facesS_2)
+    display.DisplayShape(face, update=True)
+    display.DisplayShape(S2, update=True)
     display.DisplayShape(facesS_2, update=True)
 
     section_edges = list(Topo(facesS_2).edges())
@@ -168,12 +171,12 @@ def glue_solids(event=None):
     wires.append(bild_wire(Wire_c))
     props = GProp_GProps()
 
-    '''yellow_wire = wires[0]
+    yellow_wire = wires[0]
     brown_face = BRepBuilderAPI_MakeFace(yellow_wire)
     brown_face = brown_face.Face()
     brepgprop_SurfaceProperties(brown_face, props)
     face_surf = props.Mass()
-    print(face_surf)'''
+    print(face_surf)
     #display.DisplayColoredShape(brown_face.Face(), 'BLUE')
 
 
