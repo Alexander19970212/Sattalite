@@ -23,7 +23,8 @@ from OCC.Extend.DataExchange import read_step_file
 from OCC.Core.BRep import BRep_Tool_Pnt
 from OCC.Core.ShapeAnalysis import ShapeAnalysis_FreeBounds, ShapeAnalysis_FreeBounds_ConnectEdgesToWires
 from OCC.Core.TopTools import TopTools_HSequenceOfShape, TopTools_SequenceOfShape, \
-    Handle_TopTools_HSequenceOfShape_Create, Handle_TopTools_HSequenceOfShape_DownCast, Handle_TopTools_HSequenceOfShape_IsNull
+    Handle_TopTools_HSequenceOfShape_Create, Handle_TopTools_HSequenceOfShape_DownCast, \
+    Handle_TopTools_HSequenceOfShape_IsNull
 from OCC.Extend.TopologyUtils import TopologyExplorer
 
 from OCC.Extend.ShapeFactory import center_boundingbox
@@ -49,13 +50,19 @@ def get_faces(_shape):
     return _faces
 
 
+def bild_wire(Wire_cen):
+    Wire_cen.Build()
+    print(Wire_cen.Wire())
+    return Wire_cen.Wire()
+
+
 def glue_solids(event=None):
     display.EraseAll()
     display.Context.RemoveAll(True)
     # Without common edges
     S1 = BRepPrimAPI_MakeBox(gp_Pnt(500., 500., 0.), gp_Pnt(100., 250., 300.)).Shape()
     # S2 = BRepPrimAPI_MakeBox(gp_Pnt(300., 300., 300.), gp_Pnt(600., 600., 600.)).Shape()
-    S2 = read_step_file(os.path.join('..', 'part_of_sattelate', 'pribore', 'DAV3_WS16.STEP'))
+    S2 = read_step_file(os.path.join('..', 'part_of_sattelate', 'pribore', 'DAV_WS16.STEP'))
     bbox = Bnd_Box()
     brepbndlib_Add(S2, bbox)
     xmin, ymin, zmin, xmax, ymax, zmax = bbox.Get()
@@ -70,7 +77,7 @@ def glue_solids(event=None):
         gp_Pln(gp_Pnt(xmin, ymin, zmin), gp_Pnt(xmax, ymax, zmin), gp_Pnt(xmin, ymax, zmin))).Face()'''
     facesS_2 = BRepAlgoAPI_Section(face, S2).Shape()
     # print(facesS_2)
-    #display.DisplayShape(facesS_2, update=True)
+    display.DisplayShape(facesS_2, update=True)
 
     section_edges = list(Topo(facesS_2).edges())
     print(len(section_edges))
@@ -80,8 +87,9 @@ def glue_solids(event=None):
         toptool_seq_shape.Append(edge)'''
 
     Wire_c = BRepBuilderAPI_MakeWire()
-
+    prep_list = []
     Wire_c.Add(section_edges[0])
+    prep_list.append(section_edges[0])
     ex = TopExp_Explorer(section_edges[0], TopAbs_VERTEX)
 
     # no need for a loop since we know for a fact that
@@ -94,13 +102,15 @@ def glue_solids(event=None):
     cv = topods_Vertex(c)
     v1 = BRep_Tool_Pnt(cv)
     section_edges.pop(0)
+    flag = 0
+    wires = []
 
     while len(section_edges) > 0:
 
         new_list = []
 
         for edges in section_edges:
-            Wire_c.Add(edges)
+            #Wire_c.Add(edges)
             ex = TopExp_Explorer(edges, TopAbs_VERTEX)
             c = ex.Current()
             cv = topods_Vertex(c)
@@ -113,35 +123,79 @@ def glue_solids(event=None):
             if End_1.X() == v0.X() and End_1.Y() == v0.Y() and End_1.Z() == v0.Z():
                 Wire_c.Add(edges)
                 v0 = End_2
+                flag = 0
             elif End_1.X() == v1.X() and End_1.Y() == v1.Y() and End_1.Z() == v1.Z():
                 Wire_c.Add(edges)
                 v1 = End_2
+                flag = 0
             elif End_2.X() == v0.X() and End_2.Y() == v0.Y() and End_2.Z() == v0.Z():
                 Wire_c.Add(edges)
                 v0 = End_1
+                flag = 0
             elif End_2.X() == v1.X() and End_2.Y() == v1.Y() and End_2.Z() == v1.Z():
                 Wire_c.Add(edges)
                 v1 = End_1
+                flag = 0
             else:
                 new_list.append(edges)
 
+        flag += 1
         section_edges = new_list
-        print('+')
 
+        if flag >= 5:
+            print('number_ostalos', len(section_edges))
+            wires.append(Wire_c.Wire())
+            #wir = Wire_c.Wire()
+            print('ttttt')
+            Wire_c = BRepBuilderAPI_MakeWire()
 
+            Wire_c.Add(section_edges[0])
+            ex = TopExp_Explorer(section_edges[0], TopAbs_VERTEX)
 
+            # no need for a loop since we know for a fact that
+            # the edge has only one start and one end
+            c = ex.Current()
+            cv = topods_Vertex(c)
+            v0 = BRep_Tool_Pnt(cv)
+            ex.Next()
+            c = ex.Current()
+            cv = topods_Vertex(c)
+            v1 = BRep_Tool_Pnt(cv)
+            section_edges.pop(0)
+            flag = 0
 
+    # wires.append(Wire_c.Wire())
+    wires.append(bild_wire(Wire_c))
+    props = GProp_GProps()
 
-
-    yellow_wire = Wire_c.Wire()
+    '''yellow_wire = wires[0]
     brown_face = BRepBuilderAPI_MakeFace(yellow_wire)
-    display.DisplayColoredShape(brown_face.Face(), 'BLUE')
+    brown_face = brown_face.Face()
+    brepgprop_SurfaceProperties(brown_face, props)
+    face_surf = props.Mass()
+    print(face_surf)'''
+    #display.DisplayColoredShape(brown_face.Face(), 'BLUE')
 
-    #myWireProfile = Wire.Wire()
-    #myFaceProfile = BRepBuilderAPI_MakeFace(myWireProfile)
-    #display.DisplayShape(myFaceProfile, color='BLUE', transparency=0.9)
+
+    areas = []
+    props = GProp_GProps()
+
+    for wire in wires:
+        brown_face = BRepBuilderAPI_MakeFace(wire)
+        brown_face = brown_face.Face()
+        #props = GProp_GProps()
+        brepgprop_SurfaceProperties(brown_face, props)
+        areas.append(props.Mass())
 
 
+    print(areas)
+
+
+    print(len(wires))
+
+    # myWireProfile = Wire.Wire()
+    # myFaceProfile = BRepBuilderAPI_MakeFace(myWireProfile)
+    # display.DisplayShape(myFaceProfile, color='BLUE', transparency=0.9)
 
 
 if __name__ == "__main__":
