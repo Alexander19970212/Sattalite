@@ -61,6 +61,7 @@ class Balance_mass:
 
         self.dimensoins = {}
         self.profiles = {}
+        self.valume_inter = {}
         self.display, self.start_display, self.add_menu, self.add_function_to_menu = init_display()
         for model in modules:
             self.modules[model[2]] = read_step_file(os.path.join(model[0], model[1], model[2]))
@@ -185,7 +186,7 @@ class Balance_mass:
 
     def move_frame(self):
         self.frame = read_step_file(os.path.join('part_of_sattelate', 'karkase', self.name_frame))
-        self.vizualization(self.frame, 'RED', 0.9)
+        #self.vizualization(self.frame, 'RED', 0.9)
 
 
     def change_position1(self, name, number_wall, pos_1, pos_2, pos_3):
@@ -368,6 +369,20 @@ class Balance_mass:
         trsf.SetTranslation(gp_Vec(coord_centres[3], coord_centres[4], coord_centres[5]))
         shape.Move(TopLoc_Location(trsf))
 
+    def inter_with_frame(self):
+        print('Start_inter_analyse')
+        props = GProp_GProps()
+        for model in self.modules:
+            print('#')
+            body_inter = BRepAlgoAPI_Common(self.frame, self.modules[model]).Shape()
+            self.display.DisplayShape(body_inter, color='YELLOW')
+            brepgprop_VolumeProperties(body_inter, props)
+            self.valume_inter[model] = props.Mass()
+
+        print(self.valume_inter)
+
+
+
     def inter_objects(self):
         pass
 
@@ -397,7 +412,7 @@ class Balance_mass:
         frame1 = read_step_file(os.path.join('part_of_sattelate', 'karkase', self.name_frame))
         self.display.DisplayShape(frame1, color='GREEN', transparency=0.9)
         for model in self.modules:
-            self.display.DisplayShape(self.modules[model], color='RED')
+            self.display.DisplayShape(self.modules[model], color='RED', transparency=0.9)
 
 
         self.start_display()
@@ -425,6 +440,8 @@ if __name__ == '__main__':
                ['part_of_sattelate', 'pribore', 'Vch_translator_WS16.STEP']]
     test = Balance_mass('Assemb.STEP', modules)
     test.body_random()
+    test.move_frame()
+    test.inter_with_frame()
     test.vizualization_all()
-    #test.move_frame()
+    test.move_frame()
 
