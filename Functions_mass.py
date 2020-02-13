@@ -45,19 +45,22 @@ from OCC.Core.TopExp import TopExp_Explorer
 from OCC.Extend.DataExchange import read_step_file_with_names_colors
 from OCC.Core.Quantity import Quantity_Color, Quantity_TOC_RGB
 
+from collections import defaultdict
+
 
 class Balance_mass:
     def __init__(self, frame, modules):
 
         self.name_frame = frame
         self.modules = {}
+        self.names_models = []
+        self.valume_inter_obj = defaultdict(dict)
 
-        #for testing, remove later
+        # for testing, remove later
         self.d = 3.1
-        self.px = 220 - self.d/2
-        self.py = 220 - self.d/2
+        self.px = 220 - self.d / 2
+        self.py = 220 - self.d / 2
         self.pz = 246
-
 
         self.dimensoins = {}
         self.profiles = {}
@@ -65,6 +68,7 @@ class Balance_mass:
         self.display, self.start_display, self.add_menu, self.add_function_to_menu = init_display()
         for model in modules:
             self.modules[model[2]] = read_step_file(os.path.join(model[0], model[1], model[2]))
+            self.names_models.append(model[2])
 
         for model in self.modules:
             bbox = Bnd_Box()
@@ -78,11 +82,10 @@ class Balance_mass:
 
     def glue_solids(self, S2):
 
-
         bbox = Bnd_Box()
         brepbndlib_Add(S2, bbox)
         xmin, ymin, zmin, xmax, ymax, zmax = bbox.Get()
-        p0 = gp_Pnt(xmin + (xmax - xmin) / 2, ymin + (ymax - ymin) / 2, zmin+0.1)
+        p0 = gp_Pnt(xmin + (xmax - xmin) / 2, ymin + (ymax - ymin) / 2, zmin + 0.1)
 
         vnorm = gp_Dir(0, 0, 1)
         pln = gp_Pln(p0, vnorm)
@@ -151,7 +154,7 @@ class Balance_mass:
             section_edges = new_list
 
             if flag >= 5:
-                #print('number_ostalos', len(section_edges))
+                # print('number_ostalos', len(section_edges))
                 wires.append(Wire_c.Wire())
                 Wire_c = BRepBuilderAPI_MakeWire()
 
@@ -186,8 +189,7 @@ class Balance_mass:
 
     def move_frame(self):
         self.frame = read_step_file(os.path.join('part_of_sattelate', 'karkase', self.name_frame))
-        #self.vizualization(self.frame, 'RED', 0.9)
-
+        # self.vizualization(self.frame, 'RED', 0.9)
 
     def change_position1(self, name, number_wall, pos_1, pos_2, pos_3):
         number_wall = int(number_wall % 7)
@@ -199,13 +201,15 @@ class Balance_mass:
             alpha = 90
             offset_y = self.py / 2 - self.d / 2 + self.dimensoins[name][4]
             beta = pos_3
-            if pos_1 >= self.px / 2: offset_x = self.px / 2
+            if pos_1 >= self.px / 2:
+                offset_x = self.px / 2
             elif pos_1 <= -self.px / 2:
                 offset_x = -self.px / 2
             else:
                 offset_x = pos_1
 
-            if pos_2 >= self.pz / 2: offset_z = self.pz / 2
+            if pos_2 >= self.pz / 2:
+                offset_z = self.pz / 2
             elif pos_2 <= -self.pz / 2:
                 offset_z = -self.pz / 2
             else:
@@ -216,13 +220,15 @@ class Balance_mass:
             alpha = -90
             offset_y = self.py / 2 + self.d / 2 - self.dimensoins[name][4]
             beta = pos_3
-            if pos_1 >= self.px / 2: offset_x = self.px / 2
+            if pos_1 >= self.px / 2:
+                offset_x = self.px / 2
             elif pos_1 <= -self.px / 2:
                 offset_x = -self.px / 2
             else:
                 offset_x = pos_1
 
-            if pos_2 >= self.pz / 2: offset_z = self.pz / 2
+            if pos_2 >= self.pz / 2:
+                offset_z = self.pz / 2
             elif pos_2 <= -self.pz / 2:
                 offset_z = -self.pz / 2
             else:
@@ -233,13 +239,15 @@ class Balance_mass:
             beta = -90
             offset_x = self.px / 2 - self.d / 2 + self.dimensoins[name][4]
             alpha = pos_3
-            if pos_1 >= self.py / 2: offset_y = self.py / 2
+            if pos_1 >= self.py / 2:
+                offset_y = self.py / 2
             elif pos_1 <= -self.py / 2:
                 offset_y = -self.py / 2
             else:
                 offset_y = pos_1
 
-            if pos_2 >= self.pz / 2: offset_z = self.pz / 2
+            if pos_2 >= self.pz / 2:
+                offset_z = self.pz / 2
             elif pos_2 <= -self.pz / 2:
                 offset_z = -self.pz / 2
             else:
@@ -250,13 +258,15 @@ class Balance_mass:
             beta = 90
             offset_x = self.px / 2 + self.d / 2 - self.dimensoins[name][4]
             alpha = pos_3
-            if pos_1 >= self.py / 2: offset_y = self.py / 2
+            if pos_1 >= self.py / 2:
+                offset_y = self.py / 2
             elif pos_1 <= -self.py / 2:
                 offset_y = -self.py / 2
             else:
                 offset_y = pos_1
 
-            if pos_2 >= self.pz / 2: offset_z = self.pz / 2
+            if pos_2 >= self.pz / 2:
+                offset_z = self.pz / 2
             elif pos_2 <= -self.pz / 2:
                 offset_z = -self.pz / 2
             else:
@@ -267,13 +277,15 @@ class Balance_mass:
             alpha = -90
             offset_y = -(self.py / 2 - self.d / 2 + self.dimensoins[name][4])
             beta = pos_3
-            if pos_1 >= self.px / 2: offset_x = self.px / 2
+            if pos_1 >= self.px / 2:
+                offset_x = self.px / 2
             elif pos_1 <= -self.px / 2:
                 offset_x = -self.px / 2
             else:
                 offset_x = pos_1
 
-            if pos_2 >= self.pz / 2: offset_z = self.pz / 2
+            if pos_2 >= self.pz / 2:
+                offset_z = self.pz / 2
             elif pos_2 <= -self.pz / 2:
                 offset_z = -self.pz / 2
             else:
@@ -284,13 +296,15 @@ class Balance_mass:
             alpha = 90
             offset_y = -(self.py / 2 + self.d / 2 - self.dimensoins[name][4])
             beta = pos_3
-            if pos_1 >= self.px / 2: offset_x = self.px / 2
+            if pos_1 >= self.px / 2:
+                offset_x = self.px / 2
             elif pos_1 <= -self.px / 2:
                 offset_x = -self.px / 2
             else:
                 offset_x = pos_1
 
-            if pos_2 >= self.pz / 2: offset_z = self.pz / 2
+            if pos_2 >= self.pz / 2:
+                offset_z = self.pz / 2
             elif pos_2 <= -self.pz / 2:
                 offset_z = -self.pz / 2
             else:
@@ -301,13 +315,15 @@ class Balance_mass:
             beta = 90
             offset_x = -(self.px / 2 - self.d / 2 + self.dimensoins[name][4])
             alpha = pos_3
-            if pos_1 >= self.py / 2: offset_y = self.py / 2
+            if pos_1 >= self.py / 2:
+                offset_y = self.py / 2
             elif pos_1 <= -self.py / 2:
                 offset_y = -self.py / 2
             else:
                 offset_y = pos_1
 
-            if pos_2 >= self.pz / 2: offset_z = self.pz / 2
+            if pos_2 >= self.pz / 2:
+                offset_z = self.pz / 2
             elif pos_2 <= -self.pz / 2:
                 offset_z = -self.pz / 2
             else:
@@ -318,7 +334,8 @@ class Balance_mass:
             beta = -90
             offset_x = -(self.px / 2 + self.d / 2 - self.dimensoins[name][4])
             alpha = pos_3
-            if pos_1 >= self.py / 2: offset_y = self.py / 2
+            if pos_1 >= self.py / 2:
+                offset_y = self.py / 2
             elif pos_1 <= -self.py / 2:
                 offset_y = -self.py / 2
             else:
@@ -381,10 +398,23 @@ class Balance_mass:
 
         print(self.valume_inter)
 
-
-
     def inter_objects(self):
-        pass
+
+        print('Start_inter_analyse')
+        props = GProp_GProps()
+
+        for i in range(len(self.names_models) - 2):
+            for j in range(i + 1, len(self.names_models) - 1):
+                body_inter = BRepAlgoAPI_Common(self.modules[self.names_models[i]],
+                                                self.modules[self.names_models[j]]).Shape()
+                self.display.DisplayShape(body_inter, color='WHITE')
+                brepgprop_VolumeProperties(body_inter, props)
+                mass = props.Mass()
+                #print(mass)
+                if mass > 0:
+                    self.valume_inter_obj[self.names_models[i]][self.names_models[j]] = mass
+
+        print(self.valume_inter_obj)
 
     def centre_mass(self):
         pass
@@ -414,7 +444,6 @@ class Balance_mass:
         for model in self.modules:
             self.display.DisplayShape(self.modules[model], color='RED', transparency=0.9)
 
-
         self.start_display()
 
     def body_random(self):
@@ -426,22 +455,23 @@ class Balance_mass:
 
             self.change_position1(name, Number_wall, pos_1, pos_2, pos_3)
 
+
 if __name__ == '__main__':
-    frame = ['part_of_sattelate', 'karkase','Assemb.STEP']
+    frame = ['part_of_sattelate', 'karkase', 'Assemb.STEP']
     modules = [['part_of_sattelate', 'pribore', 'Camara_WS16.STEP'],
                ['part_of_sattelate', 'pribore', 'DAV_WS16.STEP'],
                ['part_of_sattelate', 'pribore', 'All_SEP_WS16.STEP'],
                ['part_of_sattelate', 'pribore', 'Magnitometr.STEP'],
-               #['part_of_sattelate', 'pribore', 'Mahovik_WS16.STEP'],
+               # ['part_of_sattelate', 'pribore', 'Mahovik_WS16.STEP'],
                ['part_of_sattelate', 'pribore', 'Radio_WS16.STEP'],
                ['part_of_sattelate', 'pribore', 'Solar_battery_WS16.STEP'],
                ['part_of_sattelate', 'pribore', 'UKV.STEP'],
-               ['part_of_sattelate', 'pribore', 'DAV_WS16.STEP'],
+               #['part_of_sattelate', 'pribore', 'DAV_WS16.STEP'],
                ['part_of_sattelate', 'pribore', 'Vch_translator_WS16.STEP']]
     test = Balance_mass('Assemb.STEP', modules)
     test.body_random()
     test.move_frame()
-    test.inter_with_frame()
+    #test.inter_with_frame()
+    test.inter_objects()
     test.vizualization_all()
     test.move_frame()
-
