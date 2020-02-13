@@ -66,6 +66,10 @@ class Balance_mass:
             self.modules[model[2]] = read_step_file(os.path.join(model[0], model[1], model[2]))
 
         for model in self.modules:
+            bbox = Bnd_Box()
+            brepbndlib_Add(self.modules[model], bbox)
+            xmin, ymin, zmin, xmax, ymax, zmax = bbox.Get()
+            self.dimensoins[model] = [xmin, xmax, ymin, ymax, zmin, zmax]
             print(model)
             self.profiles[model] = [self.glue_solids(self.modules[model])]
 
