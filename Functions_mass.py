@@ -14,7 +14,8 @@ from OCC.Core.TopLoc import TopLoc_Location
 from OCC.Core.BRepAlgoAPI import BRepAlgoAPI_Fuse, BRepAlgoAPI_Common, BRepAlgoAPI_Section, BRepAlgoAPI_Cut
 from OCC.Core.BRepFeat import BRepFeat_Gluer
 from OCC.Core.BRepPrimAPI import BRepPrimAPI_MakeBox
-from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeFace, BRepBuilderAPI_MakeWire, BRepBuilderAPI_MakeEdge
+from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeFace, BRepBuilderAPI_MakeWire, BRepBuilderAPI_MakeEdge, \
+    BRepBuilderAPI_Copy
 from OCC.Display.SimpleGui import init_display
 from OCC.Core.LocOpe import LocOpe_FindEdges
 from OCC.Core.TopAbs import TopAbs_FACE, TopAbs_VERTEX
@@ -44,7 +45,7 @@ from OCC.Core.TopoDS import topods_Face, topods_Edge
 from OCC.Core.TopExp import TopExp_Explorer
 from OCC.Extend.DataExchange import read_step_file_with_names_colors
 from OCC.Core.Quantity import Quantity_Color, Quantity_TOC_RGB
-
+from scipy.optimize import minimize
 from collections import defaultdict
 
 
@@ -54,18 +55,19 @@ class Balance_mass:
         self.name_frame = frame
         self.modules = {}
         self.names_models = []
+        self.history_args = {}
         self.valume_inter_obj = defaultdict(dict)
 
         # for testing, remove later
 
-        self.test_var = 60
+        self.test_var = 20
         self.test_2_var = 0.0000
+        self.current_body = ''
 
         self.d = 3.1
         self.px = 220 - self.d
         self.py = 220 - self.d
         self.pz = 246
-
 
         self.peep_factor = 0
         self.peep_list = {}
@@ -79,19 +81,21 @@ class Balance_mass:
             self.modules[model[2]] = read_step_file(os.path.join(model[0], model[1], model[2]))
             self.names_models.append(model[2])
 
+        self.reserv_models = self.modules.copy()
+
         for model in self.modules:
             bbox = Bnd_Box()
             brepbndlib_Add(self.modules[model], bbox)
             xmin, ymin, zmin, xmax, ymax, zmax = bbox.Get()
             self.dimensoins[model] = [xmin, xmax, ymin, ymax, zmin, zmax]
-            #print(model)
+            # print(model)
             self.profiles[model] = [self.glue_solids(self.modules[model])]
 
-        #print(self.profiles)
+        # print(self.profiles)
 
     def max_counter(self, facesS_2):
         section_edges = list(Topo(facesS_2).edges())
-        #print(len(section_edges))
+        # print(len(section_edges))
 
         if len(section_edges) > 0:
 
@@ -210,7 +214,6 @@ class Balance_mass:
 
     def change_position1(self, name, number_wall, pos_1, pos_2, pos_3):
         number_wall = int(number_wall % 7)
-        flag = ''
 
         alpha, beta, gamma, offset_x, offset_y, offset_z = 0, 0, 0, 0, 0, 0
 
@@ -219,9 +222,8 @@ class Balance_mass:
         if number_wall == 0:
             alpha = 90
 
-            offset_y = self.py / 2 - self.d / 2 + self.dimensoins[name][4]+self.test_2_var
+            offset_y = self.py / 2 - self.d / 2 + self.dimensoins[name][4] + self.test_2_var
             beta = pos_3
-            flag = 'xyz'
             if pos_1 >= self.px / 2:
                 offset_x = self.px / 2
             elif pos_1 <= -self.px / 2:
@@ -239,7 +241,7 @@ class Balance_mass:
 
         if number_wall == 1:
             alpha = -90
-            offset_y = self.py / 2 + self.d / 2 - self.dimensoins[name][4]-self.test_2_var
+            offset_y = self.py / 2 + self.d / 2 - self.dimensoins[name][4] - self.test_2_var
             beta = pos_3
             flag = 'xyz'
             if pos_1 >= self.px / 2:
@@ -259,7 +261,7 @@ class Balance_mass:
 
         if number_wall == 2:
             beta = -90
-            offset_x = self.px / 2 - self.d / 2 + self.dimensoins[name][4]+self.test_2_var
+            offset_x = self.px / 2 - self.d / 2 + self.dimensoins[name][4] + self.test_2_var
             alpha = pos_3
             flag = 'yxz'
             if pos_1 >= self.py / 2:
@@ -279,7 +281,7 @@ class Balance_mass:
 
         if number_wall == 3:
             beta = 90
-            offset_x = self.px / 2 + self.d / 2 - self.dimensoins[name][4]-self.test_2_var
+            offset_x = self.px / 2 + self.d / 2 - self.dimensoins[name][4] - self.test_2_var
             alpha = pos_3
             flag = 'yxz'
             if pos_1 >= self.py / 2:
@@ -299,7 +301,7 @@ class Balance_mass:
 
         if number_wall == 4:
             alpha = -90
-            offset_y = -(self.py / 2 - self.d / 2 + self.dimensoins[name][4]+self.test_2_var)
+            offset_y = -(self.py / 2 - self.d / 2 + self.dimensoins[name][4] + self.test_2_var)
             beta = pos_3
             flag = 'xyz'
             if pos_1 >= self.px / 2:
@@ -319,7 +321,7 @@ class Balance_mass:
 
         if number_wall == 5:
             alpha = 90
-            offset_y = -(self.py / 2 + self.d / 2 - self.dimensoins[name][4]-self.test_2_var)
+            offset_y = -(self.py / 2 + self.d / 2 - self.dimensoins[name][4] - self.test_2_var)
             beta = pos_3
             flag = 'xyz'
             if pos_1 >= self.px / 2:
@@ -339,7 +341,7 @@ class Balance_mass:
 
         if number_wall == 6:
             beta = 90
-            offset_x = -(self.px / 2 - self.d / 2 + self.dimensoins[name][4]+self.test_2_var)
+            offset_x = -(self.px / 2 - self.d / 2 + self.dimensoins[name][4] + self.test_2_var)
             alpha = pos_3
             flag = 'yxz'
             if pos_1 >= self.py / 2:
@@ -359,7 +361,7 @@ class Balance_mass:
 
         if number_wall == 7:
             beta = -90
-            offset_x = -(self.px / 2 + self.d / 2 - self.dimensoins[name][4]-self.test_2_var)
+            offset_x = -(self.px / 2 + self.d / 2 - self.dimensoins[name][4] - self.test_2_var)
             alpha = pos_3
             flag = 'yxz'
             if pos_1 >= self.py / 2:
@@ -383,9 +385,10 @@ class Balance_mass:
         elif number_wall in [2, 3, 6, 7]:
             alpha_2, beta_2, gamma_2 = libra, 0, 0
 
+        # print(number_wall)
+        # flag = 'xyz'
 
-        #print(number_wall)
-        #flag = 'xyz'
+        self.history_args[name] = [number_wall, pos_1, pos_2, pos_3]
 
         self.filling(name, [alpha, beta, gamma, offset_x, offset_y, offset_z], [alpha_2, beta_2, gamma_2])
 
@@ -393,22 +396,21 @@ class Balance_mass:
         self.peep_factor = 0
         for model in self.modules:
             peep = self.peeping_frame(model)
-            if peep == 0: print(model, 'dont touch')
+            if peep == 0:
+                print(model, 'dont touch')
             else:
-                proc_peep = peep/self.profiles[model][0]
+                proc_peep = peep / self.profiles[model][0]
                 if proc_peep < 0.98:
                     self.peep_list[model] = proc_peep
-                    self.peep_factor += 1-proc_peep
-                    print(model, 1-proc_peep)
-                #else: print(model, 1)
-
+                    self.peep_factor += 1 - proc_peep
+                    print(model, 1 - proc_peep)
+                # else: print(model, 1)
 
     def peeping_frame(self, model):
 
         facesS_2 = BRepAlgoAPI_Section(self.frame, self.modules[model]).Shape()
 
         return self.max_counter(facesS_2)
-
 
     def change_object(self):
         pass
@@ -425,9 +427,14 @@ class Balance_mass:
         5 - смещенмие по z
         :return:
         '''
-        #print(name_body, coord_centres)
-        shape = self.modules[name_body]
+        # print(name_body, coord_centres)
+        # shape = self.modules[name_body]
         # print(body)
+
+        cp = BRepBuilderAPI_Copy(self.reserv_models[name_body])
+        cp.Perform(self.reserv_models[name_body])
+        shape = cp.Shape()
+        #print(shape)
 
         r = R.from_euler('xyz', [coord_centres[0], coord_centres[1], coord_centres[2]], degrees=True)
         Rot = r.as_dcm()
@@ -455,22 +462,27 @@ class Balance_mass:
 
         trsf.SetTranslation(gp_Vec(coord_centres[3], coord_centres[4], coord_centres[5]))
         shape.Move(TopLoc_Location(trsf))
+        self.modules[name_body] = shape
+        #print(shape)
 
     def inter_with_frame(self):
-        #print('Start_inter_analyse')
+        # print('Start_inter_analyse')
         props = GProp_GProps()
+        print(self.modules)
         for model in self.modules:
-            #print('#')
+            # print('#')
             body_inter = BRepAlgoAPI_Common(self.frame, self.modules[model]).Shape()
             self.display.DisplayShape(body_inter, color='YELLOW')
             brepgprop_VolumeProperties(body_inter, props)
-            self.valume_inter[model] = props.Mass()
+            mass = props.Mass()
+            if mass > 0:
+                self.valume_inter[model] = props.Mass()
 
-        #print(self.valume_inter)
+        # print(self.valume_inter)
 
     def inter_objects(self):
 
-        #print('Start_inter_analyse')
+        # print('Start_inter_analyse')
         self.inter_mass = 0
         props = GProp_GProps()
 
@@ -481,13 +493,34 @@ class Balance_mass:
                 self.display.DisplayShape(body_inter, color='WHITE')
                 brepgprop_VolumeProperties(body_inter, props)
                 mass = props.Mass()
-                #print(mass)
+                # print(mass)
                 if mass > 0:
                     self.inter_mass += mass
                     self.valume_inter_obj[self.names_models[i]][self.names_models[j]] = mass
 
-        #print(self.valume_inter_obj)
-        #print(self.inter_mass)
+        # print(self.valume_inter_obj)
+        # print(self.inter_mass)
+
+    def inter_one_object_frame(self, name):
+        props = GProp_GProps()
+        body_inter = BRepAlgoAPI_Common(self.frame, self.modules[name]).Shape()
+        brepgprop_VolumeProperties(body_inter, props)
+        print(props.Mass())
+        return props.Mass()
+
+    def function_for_opt(self, args):
+
+        self.change_position1(self.current_body, args[0], args[1], args[2], args[3])
+
+        return self.inter_one_object_frame(self.current_body)
+
+    def remove_inter_frame(self):
+        print(self.valume_inter)
+        for name in self.valume_inter:
+            self.current_body = name
+            x0 = self.history_args[self.current_body]
+            res = minimize(self.function_for_opt, x0, method='powell',
+                options={'xtol': 1e-8, 'disp': True})
 
     def centre_mass(self):
         pass
@@ -521,8 +554,8 @@ class Balance_mass:
 
     def body_random(self):
         for name in self.modules:
-            pos_1 = random.uniform(max(self.px, self.py) / 2 - self.test_var, self.test_var-max(self.px, self.py) / 2)
-            pos_2 = random.uniform(self.pz / 2 - self.test_var, self.test_var-self.pz / 2)
+            pos_1 = random.uniform(max(self.px, self.py) / 2 - self.test_var, self.test_var - max(self.px, self.py) / 2)
+            pos_2 = random.uniform(self.pz / 2 - self.test_var, self.test_var - self.pz / 2)
             pos_3 = random.uniform(0, 4)
             Number_wall = random.uniform(0, 20)
 
@@ -533,9 +566,9 @@ if __name__ == '__main__':
     frame = ['part_of_sattelate', 'karkase', 'Assemb.STEP']
     modules = [['part_of_sattelate', 'pribore', 'Camara2_WS16.STEP'],
                ['part_of_sattelate', 'pribore', 'DAV_WS16.STEP'],
-               #['part_of_sattelate', 'pribore', 'All_SEP_WS16.STEP'],
+               # ['part_of_sattelate', 'pribore', 'All_SEP_WS16.STEP'],
                ['part_of_sattelate', 'pribore', 'Magnitometr.STEP'],
-               #['part_of_sattelate', 'pribore', 'Mahovik_WS16.STEP'],
+               # ['part_of_sattelate', 'pribore', 'Mahovik_WS16.STEP'],
                ['part_of_sattelate', 'pribore', 'Radio_WS16.STEP'],
                ['part_of_sattelate', 'pribore', 'Solar_battery_WS16.STEP'],
                ['part_of_sattelate', 'pribore', 'UKV.STEP'],
@@ -545,7 +578,8 @@ if __name__ == '__main__':
     test.body_random()
     test.move_frame()
     test.inter_with_frame()
-    test.peeping_all_frame()
-    #test.inter_objects()
+    # test.peeping_all_frame()
+    # test.inter_objects()
+    test.remove_inter_frame()
     test.vizualization_all()
     test.move_frame()
