@@ -501,11 +501,24 @@ class Balance_mass:
         # print(self.valume_inter_obj)
         # print(self.inter_mass)
 
+    def one_obj_with_all(self, name):
+        mass = 0
+        props = GProp_GProps()
+        for body2 in self.modules:
+            if name == body2:continue
+            body_inter = BRepAlgoAPI_Common(self.modules[body2],
+                                            self.modules[name]).Shape()
+            #self.display.DisplayShape(body_inter, color='WHITE')
+            brepgprop_VolumeProperties(body_inter, props)
+            mass += props.Mass()
+        return  mass
+
+
     def inter_one_object_frame(self, name):
         props = GProp_GProps()
         body_inter = BRepAlgoAPI_Common(self.frame, self.modules[name]).Shape()
         brepgprop_VolumeProperties(body_inter, props)
-        print(props.Mass())
+        #print(props.Mass())
         return props.Mass()
 
     def function_for_opt(self, args):
@@ -552,8 +565,29 @@ class Balance_mass:
 
         self.start_display()
 
+    def one_body_random(self, name):
+        pos_1 = random.uniform(max(self.px, self.py) / 2 - self.test_var, self.test_var - max(self.px, self.py) / 2)
+        pos_2 = random.uniform(self.pz / 2 - self.test_var, self.test_var - self.pz / 2)
+        pos_3 = random.uniform(0, 4)
+        Number_wall = random.uniform(0, 20)
+
+        self.change_position1(name, Number_wall, pos_1, pos_2, pos_3)
+
+    def body_random2(self):
+        for name in self.reserv_models:
+            self.one_body_random(name)
+            inter_mass = self.inter_one_object_frame(name) + self.one_obj_with_all(name)
+            counter = 1
+            while inter_mass != 0:
+                self.one_body_random(name)
+                inter_mass = self.inter_one_object_frame(name) + self.one_obj_with_all(name)
+                counter += 1
+            print(name, counter)
+
+
+
     def body_random(self):
-        for name in self.modules:
+        for name in self.reserv_models:
             pos_1 = random.uniform(max(self.px, self.py) / 2 - self.test_var, self.test_var - max(self.px, self.py) / 2)
             pos_2 = random.uniform(self.pz / 2 - self.test_var, self.test_var - self.pz / 2)
             pos_3 = random.uniform(0, 4)
@@ -574,12 +608,15 @@ if __name__ == '__main__':
                ['part_of_sattelate', 'pribore', 'UKV.STEP'],
                ['part_of_sattelate', 'pribore', 'DAV_WS16.STEP'],
                ['part_of_sattelate', 'pribore', 'Vch_translator_WS16.STEP']]
+
+
     test = Balance_mass('Assemb.STEP', modules)
-    test.body_random()
     test.move_frame()
+    test.body_random2()
+
     test.inter_with_frame()
     # test.peeping_all_frame()
-    # test.inter_objects()
+    test.inter_objects()
     test.remove_inter_frame()
     test.vizualization_all()
     test.move_frame()
