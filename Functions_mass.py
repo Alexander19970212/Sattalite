@@ -392,6 +392,21 @@ class Balance_mass:
 
         self.filling(name, [alpha, beta, gamma, offset_x, offset_y, offset_z], [alpha_2, beta_2, gamma_2])
 
+    def peeping_one_frame(self, model):
+        peep = self.peeping_frame(model)
+        if peep == 0:
+
+            print(model)
+            return 1
+        else:
+            proc_peep = peep / self.profiles[model][0]
+            if proc_peep < 0.98:
+                #self.peep_list[model] = proc_peep
+                #self.peep_factor += 1 - proc_peep
+                return (1 - proc_peep)
+            else: return  0
+
+
     def peeping_all_frame(self):
         self.peep_factor = 0
         for model in self.modules:
@@ -576,11 +591,12 @@ class Balance_mass:
     def body_random2(self):
         for name in self.reserv_models:
             self.one_body_random(name)
-            inter_mass = self.inter_one_object_frame(name) + self.one_obj_with_all(name)
+            inter_mass = self.inter_one_object_frame(name) + self.one_obj_with_all(name) + self.peeping_one_frame(name)
             counter = 1
             while inter_mass != 0:
+                print('tt')
                 self.one_body_random(name)
-                inter_mass = self.inter_one_object_frame(name) + self.one_obj_with_all(name)
+                inter_mass = self.inter_one_object_frame(name) + self.one_obj_with_all(name)+self.peeping_one_frame(name)
                 counter += 1
             print(name, counter)
 
@@ -598,7 +614,7 @@ class Balance_mass:
 
 if __name__ == '__main__':
     frame = ['part_of_sattelate', 'karkase', 'Assemb.STEP']
-    modules = [['part_of_sattelate', 'pribore', 'Camara2_WS16.STEP'],
+    modules = [#['part_of_sattelate', 'pribore', 'Camara2_WS16.STEP'],
                ['part_of_sattelate', 'pribore', 'DAV_WS16.STEP'],
                # ['part_of_sattelate', 'pribore', 'All_SEP_WS16.STEP'],
                ['part_of_sattelate', 'pribore', 'Magnitometr.STEP'],
