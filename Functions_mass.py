@@ -577,7 +577,9 @@ class Balance_mass:
         print("Center of mass: x = %f;y = %f;z = %f;" % (cog_x, cog_y, cog_z))
         mat = props.MatrixOfInertia()
          #######################################################################################
-        print(mat(1))
+        print(mat.Value(1, 1), mat.Value(1, 2), mat.Value(1, 3))
+        print(mat.Value(2, 1), mat.Value(2, 2), mat.Value(2, 3))
+        print(mat.Value(3, 1), mat.Value(3, 2), mat.Value(3, 3))
 
         return ((cog_x**2 + cog_y**2 + cog_z**2)**0.5) #, variation_inertial)
 
