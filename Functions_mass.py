@@ -503,6 +503,7 @@ class Balance_mass:
 
         for i in range(len(self.names_models) - 2):
             for j in range(i + 1, len(self.names_models) - 1):
+                if self.names_models[i] == self.names_models[j]: continue
                 body_inter = BRepAlgoAPI_Common(self.modules[self.names_models[i]],
                                                 self.modules[self.names_models[j]]).Shape()
                 self.display.DisplayShape(body_inter, color='WHITE')
@@ -550,17 +551,57 @@ class Balance_mass:
             res = minimize(self.function_for_opt, x0, method='powell',
                 options={'xtol': 1e-8, 'disp': True})
 
-    def centre_mass(self):
-        pass
+    def centre_mass_assamble(self):
+        cp = BRepBuilderAPI_Copy(self.frame)
+        cp.Perform(self.frame)
+        shape = cp.Shape()
+        for name in self.modules:
+            shape = BRepAlgoAPI_Fuse(shape, self.modules[name]).Shape()
 
-    def moment_inertial(self):
+        variation = self.centre_mass(shape)
+        #self.save_assembly(shape)
+        return variation
+
+
+    def centre_mass(self, shape):
+
+        props = GProp_GProps()
+        brepgprop_VolumeProperties(shape, props)
+        # Get inertia properties
+        mass = props.Mass()
+        cog = props.CentreOfMass()
+        matrix_of_inertia = props.MatrixOfInertia()
+        # Display inertia properties
+        print("Cube mass = %s" % mass)
+        cog_x, cog_y, cog_z = cog.Coord()
+        print("Center of mass: x = %f;y = %f;z = %f;" % (cog_x, cog_y, cog_z))
+        mat = props.MatrixOfInertia()
+         #######################################################################################
+        print(mat(1))
+
+        return ((cog_x**2 + cog_y**2 + cog_z**2)**0.5) #, variation_inertial)
+
+
+    def moment_inertial(self, shape):
         pass
 
     def goal_function(self):
         pass
 
-    def save_assembly(self):
-        pass
+    def save_assembly(self, shape):
+        from OCC.Core.STEPControl import STEPControl_Writer, STEPControl_AsIs
+        from OCC.Core.Interface import Interface_Static_SetCVal
+        from OCC.Core.IFSelect import IFSelect_RetDone
+
+        step_writer = STEPControl_Writer()
+        Interface_Static_SetCVal("write.step.schema", "AP203")
+
+        # transfer shapes and write file
+        step_writer.Transfer(shape, STEPControl_AsIs)
+        status = step_writer.Write("assembly.stp")
+
+        if status != IFSelect_RetDone:
+            raise AssertionError("load failed")
 
     def termal_analysis(self):
         pass
@@ -629,10 +670,11 @@ if __name__ == '__main__':
     test = Balance_mass('Assemb.STEP', modules)
     test.move_frame()
     test.body_random2()
+    test.centre_mass_assamble()
 
-    test.inter_with_frame()
+    #test.inter_with_frame()
     # test.peeping_all_frame()
-    test.inter_objects()
-    test.remove_inter_frame()
+    #test.inter_objects()
+    #test.remove_inter_frame()
     test.vizualization_all()
     test.move_frame()
