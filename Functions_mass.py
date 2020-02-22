@@ -76,7 +76,7 @@ class Balance_mass:
         self.profiles = {}
         self.valume_inter = {}
         self.inter_mass = 0
-        self.display, self.start_display, self.add_menu, self.add_function_to_menu = init_display()
+        #self.display, self.start_display, self.add_menu, self.add_function_to_menu = init_display()
         for model in modules:
             self.modules[model[2]] = read_step_file(os.path.join(model[0], model[1], model[2]))
             self.names_models.append(model[2])
@@ -401,11 +401,11 @@ class Balance_mass:
         else:
             proc_peep = peep / self.profiles[model][0]
             if proc_peep < 0.98:
-                #self.peep_list[model] = proc_peep
-                #self.peep_factor += 1 - proc_peep
+                # self.peep_list[model] = proc_peep
+                # self.peep_factor += 1 - proc_peep
                 return (1 - proc_peep)
-            else: return  0
-
+            else:
+                return 0
 
     def peeping_all_frame(self):
         self.peep_factor = 0
@@ -449,7 +449,7 @@ class Balance_mass:
         cp = BRepBuilderAPI_Copy(self.reserv_models[name_body])
         cp.Perform(self.reserv_models[name_body])
         shape = cp.Shape()
-        #print(shape)
+        # print(shape)
 
         r = R.from_euler('xyz', [coord_centres[0], coord_centres[1], coord_centres[2]], degrees=True)
         Rot = r.as_dcm()
@@ -478,7 +478,7 @@ class Balance_mass:
         trsf.SetTranslation(gp_Vec(coord_centres[3], coord_centres[4], coord_centres[5]))
         shape.Move(TopLoc_Location(trsf))
         self.modules[name_body] = shape
-        #print(shape)
+        # print(shape)
 
     def inter_with_frame(self):
         # print('Start_inter_analyse')
@@ -521,20 +521,19 @@ class Balance_mass:
         mass = 0
         props = GProp_GProps()
         for body2 in self.modules:
-            if name == body2:continue
+            if name == body2: continue
             body_inter = BRepAlgoAPI_Common(self.modules[body2],
                                             self.modules[name]).Shape()
-            #self.display.DisplayShape(body_inter, color='WHITE')
+            # self.display.DisplayShape(body_inter, color='WHITE')
             brepgprop_VolumeProperties(body_inter, props)
             mass += props.Mass()
-        return  mass
-
+        return mass
 
     def inter_one_object_frame(self, name):
         props = GProp_GProps()
         body_inter = BRepAlgoAPI_Common(self.frame, self.modules[name]).Shape()
         brepgprop_VolumeProperties(body_inter, props)
-        #print(props.Mass())
+        # print(props.Mass())
         return props.Mass()
 
     def function_for_opt(self, args):
@@ -543,13 +542,18 @@ class Balance_mass:
 
         return self.inter_one_object_frame(self.current_body)
 
-    def remove_inter_frame(self):
-        print(self.valume_inter)
-        for name in self.valume_inter:
-            self.current_body = name
-            x0 = self.history_args[self.current_body]
-            res = minimize(self.function_for_opt, x0, method='powell',
-                options={'xtol': 1e-8, 'disp': True})
+    def optimithation(self):
+        print('Start optimithtion')
+        print(self.history_args)
+        for i in range(5):
+            self.ipoph = i
+            for name in self.modules:
+                self.current_body = name
+                x0 = self.history_args[self.current_body]
+                res = minimize(self.goal_function, x0, method='powell',
+                               options={'xtol': 1e-8, 'disp': True})
+
+        self.save_all_assamle()
 
     def centre_mass_assamble(self):
         cp = BRepBuilderAPI_Copy(self.frame)
@@ -558,10 +562,18 @@ class Balance_mass:
         for name in self.modules:
             shape = BRepAlgoAPI_Fuse(shape, self.modules[name]).Shape()
 
-        variation = self.centre_mass(shape)
-        #self.save_assembly(shape)
-        return variation
+        variation, var_inert = self.centre_mass(shape)
+        # self.save_assembly(shape)
+        return variation, var_inert
 
+    def save_all_assamle(self):
+        cp = BRepBuilderAPI_Copy(self.frame)
+        cp.Perform(self.frame)
+        shape = cp.Shape()
+        for name in self.modules:
+            shape = BRepAlgoAPI_Fuse(shape, self.modules[name]).Shape()
+
+        self.save_assembly(shape)
 
     def centre_mass(self, shape):
 
@@ -572,23 +584,32 @@ class Balance_mass:
         cog = props.CentreOfMass()
         matrix_of_inertia = props.MatrixOfInertia()
         # Display inertia properties
-        print("Cube mass = %s" % mass)
+        # print("Cube mass = %s" % mass)
         cog_x, cog_y, cog_z = cog.Coord()
-        print("Center of mass: x = %f;y = %f;z = %f;" % (cog_x, cog_y, cog_z))
+        # print("Center of mass: x = %f;y = %f;z = %f;" % (cog_x, cog_y, cog_z))
         mat = props.MatrixOfInertia()
-         #######################################################################################
-        print(mat.Value(1, 1), mat.Value(1, 2), mat.Value(1, 3))
-        print(mat.Value(2, 1), mat.Value(2, 2), mat.Value(2, 3))
-        print(mat.Value(3, 1), mat.Value(3, 2), mat.Value(3, 3))
+        #######################################################################################
 
-        return ((cog_x**2 + cog_y**2 + cog_z**2)**0.5) #, variation_inertial)
+        variation_inertial = abs(mat.Value(2, 3)) + abs(mat.Value(1, 2)) + abs(mat.Value(1, 3)) + abs(
+            mat.Value(2, 1)) + abs(mat.Value(3, 1)) + abs(mat.Value(3, 2))
 
+        return (cog_x ** 2 + cog_y ** 2 + cog_z ** 2) ** 0.5, variation_inertial
 
     def moment_inertial(self, shape):
         pass
 
-    def goal_function(self):
-        pass
+    def goal_function(self, args):
+        self.change_position1(self.current_body, args[0], args[1], args[2], args[3])
+
+        intr1 = 100 * self.inter_one_object_frame(self.current_body)
+        intr2 = 100 * self.one_obj_with_all(self.current_body)
+        var1, var2 = self.centre_mass_assamble()
+        var1 *= 1000
+        print(' Ipophe: ', self.ipoph+1, ' Name: ', self.current_body, ' Intr_frame: ', intr1, ' Intr_models: ', intr2,
+              ' Var_mass: ', var1, ' Var_inertial: ', var2, ' Summ:',
+              intr1 + intr2 + var1 + var2)
+
+        return intr1 + intr2 + var1 + var2
 
     def save_assembly(self, shape):
         from OCC.Core.STEPControl import STEPControl_Writer, STEPControl_AsIs
@@ -612,10 +633,12 @@ class Balance_mass:
         pass
 
     def vizualization(self, shape, color, transp):
+        self.display, self.start_display, self.add_menu, self.add_function_to_menu = init_display()
         self.display.DisplayShape(shape, color=color, transparency=transp)
         self.start_display()
 
     def vizualization_all(self):
+        self.display, self.start_display, self.add_menu, self.add_function_to_menu = init_display()
         frame1 = read_step_file(os.path.join('part_of_sattelate', 'karkase', self.name_frame))
         self.display.DisplayShape(frame1, color='GREEN', transparency=0.9)
         for model in self.modules:
@@ -639,11 +662,10 @@ class Balance_mass:
             while inter_mass != 0:
                 print('tt')
                 self.one_body_random(name)
-                inter_mass = self.inter_one_object_frame(name) + self.one_obj_with_all(name)+self.peeping_one_frame(name)
+                inter_mass = self.inter_one_object_frame(name) + self.one_obj_with_all(name) + self.peeping_one_frame(
+                    name)
                 counter += 1
             print(name, counter)
-
-
 
     def body_random(self):
         for name in self.reserv_models:
@@ -657,26 +679,26 @@ class Balance_mass:
 
 if __name__ == '__main__':
     frame = ['part_of_sattelate', 'karkase', 'Assemb.STEP']
-    modules = [#['part_of_sattelate', 'pribore', 'Camara2_WS16.STEP'],
-               ['part_of_sattelate', 'pribore', 'DAV_WS16.STEP'],
-               # ['part_of_sattelate', 'pribore', 'All_SEP_WS16.STEP'],
-               ['part_of_sattelate', 'pribore', 'Magnitometr.STEP'],
-               # ['part_of_sattelate', 'pribore', 'Mahovik_WS16.STEP'],
-               ['part_of_sattelate', 'pribore', 'Radio_WS16.STEP'],
-               ['part_of_sattelate', 'pribore', 'Solar_battery_WS16.STEP'],
-               ['part_of_sattelate', 'pribore', 'UKV.STEP'],
-               ['part_of_sattelate', 'pribore', 'DAV_WS16.STEP'],
-               ['part_of_sattelate', 'pribore', 'Vch_translator_WS16.STEP']]
-
+    modules = [  # ['part_of_sattelate', 'pribore', 'Camara2_WS16.STEP'],
+        ['part_of_sattelate', 'pribore', 'DAV_WS16.STEP'],
+        # ['part_of_sattelate', 'pribore', 'All_SEP_WS16.STEP'],
+        ['part_of_sattelate', 'pribore', 'Magnitometr.STEP'],
+        # ['part_of_sattelate', 'pribore', 'Mahovik_WS16.STEP'],
+        ['part_of_sattelate', 'pribore', 'Radio_WS16.STEP'],
+        ['part_of_sattelate', 'pribore', 'Solar_battery_WS16.STEP'],
+        ['part_of_sattelate', 'pribore', 'UKV.STEP'],
+        ['part_of_sattelate', 'pribore', 'DAV_WS16.STEP'],
+        ['part_of_sattelate', 'pribore', 'Vch_translator_WS16.STEP']]
 
     test = Balance_mass('Assemb.STEP', modules)
     test.move_frame()
     test.body_random2()
-    test.centre_mass_assamble()
+    # test.centre_mass_assamble()
+    test.optimithation()
 
-    #test.inter_with_frame()
+    # test.inter_with_frame()
     # test.peeping_all_frame()
-    #test.inter_objects()
-    #test.remove_inter_frame()
+    # test.inter_objects()
+    # test.remove_inter_frame()
     test.vizualization_all()
     test.move_frame()
