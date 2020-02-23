@@ -551,7 +551,7 @@ class Balance_mass:
                 self.current_body = name
                 x0 = self.history_args[self.current_body]
                 res = minimize(self.goal_function, x0, method='powell',
-                               options={'xtol': 1e-8, 'disp': True})
+                               options={'ftol': 0.1, 'disp': True})
 
         self.save_all_assamle()
 
