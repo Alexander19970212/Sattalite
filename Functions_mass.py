@@ -38,6 +38,7 @@ from OCC.Extend.DataExchange import read_step_file
 from OCC.Core.BRep import BRep_Tool_Pnt
 from OCC.Extend.ShapeFactory import make_wire
 import random
+#import matplotlib.pyplot as plt
 from OCC.Display.SimpleGui import init_display
 from scipy.spatial.transform import Rotation as R
 from OCC.Core.TopAbs import TopAbs_EDGE, TopAbs_FACE
@@ -59,10 +60,12 @@ class Balance_mass:
         self.valume_inter_obj = defaultdict(dict)
 
         # for testing, remove later
+        self.progress = []
 
         self.test_var = 20
         self.test_2_var = 0.0000
         self.current_body = ''
+        self.iteration = 1
 
         self.d = 3.1
         self.px = 220 - self.d
@@ -420,6 +423,7 @@ class Balance_mass:
                     self.peep_factor += 1 - proc_peep
                     print(model, 1 - proc_peep)
                 # else: print(model, 1)
+        return self.peep_factor
 
     def peeping_frame(self, model):
 
@@ -482,17 +486,20 @@ class Balance_mass:
 
     def inter_with_frame(self):
         # print('Start_inter_analyse')
+        all_result = 0
         props = GProp_GProps()
         print(self.modules)
         for model in self.modules:
             # print('#')
             body_inter = BRepAlgoAPI_Common(self.frame, self.modules[model]).Shape()
-            self.display.DisplayShape(body_inter, color='YELLOW')
+            #self.display.DisplayShape(body_inter, color='YELLOW')
             brepgprop_VolumeProperties(body_inter, props)
             mass = props.Mass()
             if mass > 0:
                 self.valume_inter[model] = props.Mass()
+                all_result += mass
 
+        return all_result
         # print(self.valume_inter)
 
     def inter_objects(self):
@@ -506,7 +513,7 @@ class Balance_mass:
                 if self.names_models[i] == self.names_models[j]: continue
                 body_inter = BRepAlgoAPI_Common(self.modules[self.names_models[i]],
                                                 self.modules[self.names_models[j]]).Shape()
-                self.display.DisplayShape(body_inter, color='WHITE')
+                #self.display.DisplayShape(body_inter, color='WHITE')
                 brepgprop_VolumeProperties(body_inter, props)
                 mass = props.Mass()
                 # print(mass)
@@ -514,6 +521,7 @@ class Balance_mass:
                     self.inter_mass += mass
                     self.valume_inter_obj[self.names_models[i]][self.names_models[j]] = mass
 
+        return self.inter_mass
         # print(self.valume_inter_obj)
         # print(self.inter_mass)
 
@@ -552,6 +560,32 @@ class Balance_mass:
                 x0 = self.history_args[self.current_body]
                 res = minimize(self.goal_function, x0, method='powell',
                                options={'ftol': 0.1, 'disp': True})
+
+        self.save_all_assamle()
+
+
+    def optimithation2(self):
+        print('Start optimithtion')
+        print(self.history_args)
+        self.interation = 1
+        x0 = []
+        '''for name in self.history_args:
+            x0.append(self.history_args[name])'''
+
+        for name in self.history_args:
+            for i in self.history_args[name]:
+             x0.append(i)
+        #x0 = self.history_args[self.current_body]
+        res = minimize(self.goal_function2, x0, method='powell',
+                       options={'ftol': 0.1, 'disp': True})
+
+        '''fig = plt.figure()
+        plt.plot(self.progress)
+        fig.savefig('progress.png')'''
+
+        with open("file.txt", 'w') as f:
+            for s in self.progress:
+                f.write(str(s) + '\n')
 
         self.save_all_assamle()
 
@@ -610,6 +644,26 @@ class Balance_mass:
               intr1 + intr2 + var1 + var2)
 
         return intr1 + intr2 + var1 + var2
+
+
+    def goal_function2(self, args):
+
+        for i, name in enumerate(self.history_args):
+            self.change_position1(name, args[i*4], args[i*4+1], args[i*4+2], args[i*4+3])
+
+        intr1 = 100 * self.inter_with_frame()
+        intr2 = 100 * self.inter_objects()
+        peep = 1000 * self.peeping_all_frame()
+        var1, var2 = self.centre_mass_assamble()
+        var1 *= 1000
+        print(' Iteration: ', self.iteration, ' Intr_frame: ', intr1, ' Intr_models: ', intr2, ' Peeping: ', peep,
+              ' Var_mass: ', var1, ' Var_inertial: ', var2, ' Summ:',
+              intr1 + intr2 + var1 + var2 + peep)
+        self.iteration += 1
+        res = intr1 + intr2 + var1 + var2 + peep
+        self.progress.append(res)
+
+        return res
 
     def save_assembly(self, shape):
         from OCC.Core.STEPControl import STEPControl_Writer, STEPControl_AsIs
@@ -694,7 +748,7 @@ if __name__ == '__main__':
     test.move_frame()
     test.body_random2()
     # test.centre_mass_assamble()
-    test.optimithation()
+    test.optimithation2()
 
     # test.inter_with_frame()
     # test.peeping_all_frame()
