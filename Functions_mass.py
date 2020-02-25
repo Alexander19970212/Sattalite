@@ -416,6 +416,7 @@ class Balance_mass:
             peep = self.peeping_frame(model)
             if peep == 0:
                 print(model, 'dont touch')
+                self.peep_factor += 1
             else:
                 proc_peep = peep / self.profiles[model][0]
                 if proc_peep < 0.98:
@@ -589,6 +590,39 @@ class Balance_mass:
 
         self.save_all_assamle()
 
+    def optimithation_evolution(self):
+        from scipy.optimize import differential_evolution
+        print('Start optimithtion')
+        print(self.history_args)
+        self.flag = 0
+        self.interation = 1
+        x0 = []
+        bounds = []
+        '''for name in self.history_args:
+            x0.append(self.history_args[name])'''
+
+        for name in self.history_args:
+            for i in self.history_args[name]:
+                x0.append(i)
+            bounds.append((1, 8))
+            bounds.append((-self.px/2, self.px/2))
+            bounds.append((-self.pz/2, self.pz/2))
+            bounds.append((-180, 180))
+        #x0 = self.history_args[self.current_body]
+        #res = minimize(self.goal_function2, x0, method='powell', options={'ftol': 0.1, 'disp': True})
+        result = differential_evolution(self.goal_function2, bounds)#, x0)
+        '''fig = plt.figure()
+        plt.plot(self.progress)
+        fig.savefig('progress.png')'''
+        print(result.x, result.fun)
+
+        with open("file2.txt", 'w') as f:
+            for s in self.progress:
+                f.write(str(s) + '\n')
+
+        self.save_all_assamle()
+
+
     def centre_mass_assamble(self):
         cp = BRepBuilderAPI_Copy(self.frame)
         cp.Perform(self.frame)
@@ -651,8 +685,8 @@ class Balance_mass:
         for i, name in enumerate(self.history_args):
             self.change_position1(name, args[i*4], args[i*4+1], args[i*4+2], args[i*4+3])
 
-        intr1 = 100 * self.inter_with_frame()
-        intr2 = 100 * self.inter_objects()
+        intr1 = 1000 * self.inter_with_frame()
+        intr2 = 1000 * self.inter_objects()
         peep = 1000 * self.peeping_all_frame()
         var1, var2 = self.centre_mass_assamble()
         var1 *= 1000
@@ -662,6 +696,9 @@ class Balance_mass:
         self.iteration += 1
         res = intr1 + intr2 + var1 + var2 + peep
         self.progress.append(res)
+        if res == 0 and self.flag == 0:
+            self.save_all_assamle()
+            self.flag = 1
 
         return res
 
@@ -748,7 +785,8 @@ if __name__ == '__main__':
     test.move_frame()
     test.body_random2()
     # test.centre_mass_assamble()
-    test.optimithation2()
+    #test.optimithation2()
+    test.optimithation_evolution()
 
     # test.inter_with_frame()
     # test.peeping_all_frame()
