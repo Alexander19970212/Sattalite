@@ -661,7 +661,8 @@ class Balance_mass:
         variation_inertial = abs(mat.Value(2, 3)) + abs(mat.Value(1, 2)) + abs(mat.Value(1, 3)) + abs(
             mat.Value(2, 1)) + abs(mat.Value(3, 1)) + abs(mat.Value(3, 2))
 
-        return (cog_x ** 2 + cog_y ** 2 + cog_z ** 2) ** 0.5, variation_inertial
+        var1, var2 = (cog_x ** 2 + cog_y ** 2 + cog_z ** 2) ** 0.5, variation_inertial
+        if var1 < 0.0001 or var2 < 0.0001: var1, var2 = 10000000000
 
     def moment_inertial(self, shape):
         pass
@@ -686,20 +687,26 @@ class Balance_mass:
             self.change_position1(name, args[i*4], args[i*4+1], args[i*4+2], args[i*4+3])
 
         intr1 = 1000 * self.inter_with_frame()
-        intr2 = 1000 * self.inter_objects()
-        peep = 1000 * self.peeping_all_frame()
-        var1, var2 = self.centre_mass_assamble()
-        var1 *= 1000
-        print(' Iteration: ', self.iteration, ' Intr_frame: ', intr1, ' Intr_models: ', intr2, ' Peeping: ', peep,
-              ' Var_mass: ', var1, ' Var_inertial: ', var2, ' Summ:',
-              intr1 + intr2 + var1 + var2 + peep)
-        self.iteration += 1
-        res = intr1 + intr2 + var1 + var2 + peep
-        self.progress.append(res)
-        if res == 0 and self.flag == 0:
-            self.save_all_assamle()
-            self.flag = 1
+        if intr1 == 0:
+            intr2 = 1000 * self.inter_objects()
+            if intr2 == 0:
+                peep = 1000 * self.peeping_all_frame()
+                if peep == 0:
+                    var1, var2 = self.centre_mass_assamble()
+                    var1 *= 1000
+                    print(' Iteration: ', self.iteration, ' Intr_frame: ', intr1, ' Intr_models: ', intr2, ' Peeping: ', peep,
+                          ' Var_mass: ', var1, ' Var_inertial: ', var2, ' Summ:',
+                          intr1 + intr2 + var1 + var2 + peep)
 
+                    res = intr1 + intr2 + var1 + var2 + peep
+                    self.progress.append(res)
+                    if res == 0.1 and self.flag == 0:
+                        self.save_all_assamle()
+                        self.flag = 1
+                else: res = 100000000000
+            else: res = 100000000000
+        else: res = 100000000000
+        self.iteration += 1
         return res
 
     def save_assembly(self, shape):
