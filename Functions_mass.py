@@ -79,7 +79,7 @@ class Balance_mass:
         self.profiles = {}
         self.valume_inter = {}
         self.inter_mass = 0
-        #self.display, self.start_display, self.add_menu, self.add_function_to_menu = init_display()
+        self.display, self.start_display, self.add_menu, self.add_function_to_menu = init_display()
         for model in modules:
             self.modules[model[2]] = read_step_file(os.path.join(model[0], model[1], model[2]))
             self.names_models.append(model[2])
@@ -508,6 +508,35 @@ class Balance_mass:
         # print('Start_inter_analyse')
         self.inter_mass = 0
         props = GProp_GProps()
+        #print(self.names_models)
+
+        for i in range(len(self.names_models) - 1):
+            for j in range(i + 1, len(self.names_models)):
+                self.display.DisplayShape(self.modules[self.names_models[i]], color='RED', transparency=0.9)
+                self.display.DisplayShape(self.modules[self.names_models[j]], color='RED', transparency=0.9)
+                print(self.names_models[i], self.names_models[j])
+                if self.names_models[i] == self.names_models[j]: continue
+                body_inter = BRepAlgoAPI_Section(self.modules[self.names_models[i]],
+                                                self.modules[self.names_models[j]]).Shape()
+                self.display.DisplayShape(body_inter, color='WHITE')
+                brepgprop_VolumeProperties(body_inter, props)
+                mass = props.Mass()
+                print(mass)
+                if mass > 0:
+                    self.inter_mass += mass
+                    self.valume_inter_obj[self.names_models[i]][self.names_models[j]] = mass
+
+        self.start_display()
+        return self.inter_mass
+        # print(self.valume_inter_obj)
+        # print(self.inter_mass)
+
+
+    def inter_objects2(self):
+
+        # print('Start_inter_analyse')
+        self.inter_mass = 0
+        props = GProp_GProps()
 
         for i in range(len(self.names_models) - 2):
             for j in range(i + 1, len(self.names_models) - 1):
@@ -521,6 +550,8 @@ class Balance_mass:
                 if mass > 0:
                     self.inter_mass += mass
                     self.valume_inter_obj[self.names_models[i]][self.names_models[j]] = mass
+
+
 
         return self.inter_mass
         # print(self.valume_inter_obj)
@@ -761,7 +792,7 @@ class Balance_mass:
         self.start_display()
 
     def vizualization_all(self):
-        self.display, self.start_display, self.add_menu, self.add_function_to_menu = init_display()
+        #self.display, self.start_display, self.add_menu, self.add_function_to_menu = init_display()
         frame1 = read_step_file(os.path.join('part_of_sattelate', 'karkase', self.name_frame))
         self.display.DisplayShape(frame1, color='GREEN', transparency=0.9)
         for model in self.modules:
@@ -803,13 +834,13 @@ class Balance_mass:
 if __name__ == '__main__':
     frame = ['part_of_sattelate', 'karkase', 'Assemb.STEP']
     modules = [  # ['part_of_sattelate', 'pribore', 'Camara2_WS16.STEP'],
-        ['part_of_sattelate', 'pribore', 'DAV_WS16.STEP'],
+        #['part_of_sattelate', 'pribore', 'DAV_WS16.STEP'],
         # ['part_of_sattelate', 'pribore', 'All_SEP_WS16.STEP'],
         #['part_of_sattelate', 'pribore', 'Magnitometr.STEP'],
         # ['part_of_sattelate', 'pribore', 'Mahovik_WS16.STEP'],
         #['part_of_sattelate', 'pribore', 'Radio_WS16.STEP'],
         #['part_of_sattelate', 'pribore', 'Solar_battery_WS16.STEP'],
-        #['part_of_sattelate', 'pribore', 'UKV.STEP'],
+        ['part_of_sattelate', 'pribore', 'UKV.STEP'],
         #['part_of_sattelate', 'pribore', 'DAV_WS16.STEP'],
         ['part_of_sattelate', 'pribore', 'Vch_translator_WS16.STEP']]
 
@@ -821,7 +852,8 @@ if __name__ == '__main__':
     ###########################################
     #test.optimithation_evolution()
     ###########################################
-    args = [2.64585885, 3.43770613, -12.86516986, 10.30736343, 2.23339371, 12.30923883, -1.55528775, 146.94101023]
+    #args = [2.64585885, 3.43770613, -12.86516986, 10.30736343, 2.23339371, 12.30923883, -1.55528775, 146.94101023]
+    args = [2.64585885, 3.43770613, -13.86516986, 10.30736343, 2.23339371, 13.30923883, -1.55528775, 146.94101023]
     test.entering_result(args)
     test.goal_function2(args)
 
@@ -829,5 +861,5 @@ if __name__ == '__main__':
     # test.peeping_all_frame()
     # test.inter_objects()
     # test.remove_inter_frame()
-    test.vizualization_all()
-    test.move_frame()
+    #test.vizualization_all()
+    #test.move_frame()
