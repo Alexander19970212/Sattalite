@@ -489,7 +489,7 @@ class Balance_mass:
         # print('Start_inter_analyse')
         all_result = 0
         props = GProp_GProps()
-        print(self.modules)
+        #print(self.modules)
         for model in self.modules:
             # print('#')
             body_inter = BRepAlgoAPI_Common(self.frame, self.modules[model]).Shape()
@@ -597,6 +597,7 @@ class Balance_mass:
         self.flag = 0
         self.interation = 1
         x0 = []
+        args = []
         bounds = []
         '''for name in self.history_args:
             x0.append(self.history_args[name])'''
@@ -604,30 +605,47 @@ class Balance_mass:
         for name in self.history_args:
             for i in self.history_args[name]:
                 x0.append(i)
+                args.append([i in range(0, 8)])
+                args.append([i in range(int((-self.px+self.test_var)/2), int((self.px-self.test_var)/2), 1)])
+                args.append([i in range(int((-self.pz+self.test_var)/2), int((self.pz-self.test_var)/2), 1)])
+                args.append([i in range(-90, 270, 90)])
+
             bounds.append((1, 8))
             bounds.append((-self.px/2, self.px/2))
             bounds.append((-self.pz/2, self.pz/2))
             bounds.append((-180, 180))
         #x0 = self.history_args[self.current_body]
         #res = minimize(self.goal_function2, x0, method='powell', options={'ftol': 0.1, 'disp': True})
-        result = differential_evolution(self.goal_function2, bounds)#, x0)
+        result = differential_evolution(self.goal_function2, bounds, maxiter = 200, disp=True, popsize=10, workers=3)#, x0)
         '''fig = plt.figure()
         plt.plot(self.progress)
         fig.savefig('progress.png')'''
         print(result.x, result.fun)
 
-        with open("file2.txt", 'w') as f:
+        with open("file3.txt", 'w') as f:
             for s in self.progress:
                 f.write(str(s) + '\n')
 
         self.save_all_assamle()
 
+    def entering_result(self, args):
+
+        for i, name in enumerate(self.history_args):
+            self.change_position1(name, args[i*4], args[i*4+1], args[i*4+2], args[i*4+3])
+
+        self.save_all_assamle()
+
 
     def centre_mass_assamble(self):
-        cp = BRepBuilderAPI_Copy(self.frame)
-        cp.Perform(self.frame)
-        shape = cp.Shape()
+
+        flag = 0
+        shape = 0
         for name in self.modules:
+            if flag == 0:
+                cp = BRepBuilderAPI_Copy(self.modules[name])
+                cp.Perform(self.modules[name])
+                shape = cp.Shape()
+                flag = 1
             shape = BRepAlgoAPI_Fuse(shape, self.modules[name]).Shape()
 
         variation, var_inert = self.centre_mass(shape)
@@ -635,12 +653,17 @@ class Balance_mass:
         return variation, var_inert
 
     def save_all_assamle(self):
-        cp = BRepBuilderAPI_Copy(self.frame)
-        cp.Perform(self.frame)
-        shape = cp.Shape()
-        for name in self.modules:
-            shape = BRepAlgoAPI_Fuse(shape, self.modules[name]).Shape()
+        from OCC.Core.BOPAlgo import BOPAlgo_Builder
+        print(self.modules.keys())
+        builder = BOPAlgo_Builder()
 
+
+        for name in self.modules:
+            builder.AddArgument(self.modules[name])
+
+        builder.SetRunParallel(True)
+        builder.Perform()
+        shape = builder.Shape()
         self.save_assembly(shape)
 
     def centre_mass(self, shape):
@@ -662,7 +685,8 @@ class Balance_mass:
             mat.Value(2, 1)) + abs(mat.Value(3, 1)) + abs(mat.Value(3, 2))
 
         var1, var2 = (cog_x ** 2 + cog_y ** 2 + cog_z ** 2) ** 0.5, variation_inertial
-        if var1 < 0.0001 or var2 < 0.0001: var1, var2 = 10000000000
+        if var1 < 0.0001 or var2 < 0.0001: var1, var2 = 10**10, 10**10
+        return var1, var2
 
     def moment_inertial(self, shape):
         pass
@@ -703,9 +727,10 @@ class Balance_mass:
                     if res == 0.1 and self.flag == 0:
                         self.save_all_assamle()
                         self.flag = 1
-                else: res = 100000000000
-            else: res = 100000000000
-        else: res = 100000000000
+                else: res = 10**10
+            else: res = 10**15
+        else: res = 10**20
+        print(self.iteration)
         self.iteration += 1
         return res
 
@@ -780,12 +805,12 @@ if __name__ == '__main__':
     modules = [  # ['part_of_sattelate', 'pribore', 'Camara2_WS16.STEP'],
         ['part_of_sattelate', 'pribore', 'DAV_WS16.STEP'],
         # ['part_of_sattelate', 'pribore', 'All_SEP_WS16.STEP'],
-        ['part_of_sattelate', 'pribore', 'Magnitometr.STEP'],
+        #['part_of_sattelate', 'pribore', 'Magnitometr.STEP'],
         # ['part_of_sattelate', 'pribore', 'Mahovik_WS16.STEP'],
-        ['part_of_sattelate', 'pribore', 'Radio_WS16.STEP'],
-        ['part_of_sattelate', 'pribore', 'Solar_battery_WS16.STEP'],
-        ['part_of_sattelate', 'pribore', 'UKV.STEP'],
-        ['part_of_sattelate', 'pribore', 'DAV_WS16.STEP'],
+        #['part_of_sattelate', 'pribore', 'Radio_WS16.STEP'],
+        #['part_of_sattelate', 'pribore', 'Solar_battery_WS16.STEP'],
+        #['part_of_sattelate', 'pribore', 'UKV.STEP'],
+        #['part_of_sattelate', 'pribore', 'DAV_WS16.STEP'],
         ['part_of_sattelate', 'pribore', 'Vch_translator_WS16.STEP']]
 
     test = Balance_mass('Assemb.STEP', modules)
@@ -793,7 +818,12 @@ if __name__ == '__main__':
     test.body_random2()
     # test.centre_mass_assamble()
     #test.optimithation2()
-    test.optimithation_evolution()
+    ###########################################
+    #test.optimithation_evolution()
+    ###########################################
+    args = [2.64585885, 3.43770613, -12.86516986, 10.30736343, 2.23339371, 12.30923883, -1.55528775, 146.94101023]
+    test.entering_result(args)
+    test.goal_function2(args)
 
     # test.inter_with_frame()
     # test.peeping_all_frame()
