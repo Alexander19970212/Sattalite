@@ -38,7 +38,7 @@ from OCC.Extend.DataExchange import read_step_file
 from OCC.Core.BRep import BRep_Tool_Pnt
 from OCC.Extend.ShapeFactory import make_wire
 import random
-#import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 from OCC.Display.SimpleGui import init_display
 from scipy.spatial.transform import Rotation as R
 from OCC.Core.TopAbs import TopAbs_EDGE, TopAbs_FACE
@@ -62,7 +62,7 @@ class Balance_mass:
         # for testing, remove later
         self.progress = []
 
-        self.test_var = 20
+        self.test_var = 40
         self.test_2_var = 0.0000
         self.current_body = ''
         self.iteration = 1
@@ -79,7 +79,7 @@ class Balance_mass:
         self.profiles = {}
         self.valume_inter = {}
         self.inter_mass = 0
-        self.display, self.start_display, self.add_menu, self.add_function_to_menu = init_display()
+        # self.display, self.start_display, self.add_menu, self.add_function_to_menu = init_display()
         for model in modules:
             self.modules[model[2]] = read_step_file(os.path.join(model[0], model[1], model[2]))
             self.names_models.append(model[2])
@@ -489,11 +489,11 @@ class Balance_mass:
         # print('Start_inter_analyse')
         all_result = 0
         props = GProp_GProps()
-        #print(self.modules)
+        # print(self.modules)
         for model in self.modules:
             # print('#')
             body_inter = BRepAlgoAPI_Common(self.frame, self.modules[model]).Shape()
-            #self.display.DisplayShape(body_inter, color='YELLOW')
+            # self.display.DisplayShape(body_inter, color='YELLOW')
             brepgprop_VolumeProperties(body_inter, props)
             mass = props.Mass()
             if mass > 0:
@@ -508,29 +508,28 @@ class Balance_mass:
         # print('Start_inter_analyse')
         self.inter_mass = 0
         props = GProp_GProps()
-        #print(self.names_models)
+        # print(self.names_models)
 
         for i in range(len(self.names_models) - 1):
             for j in range(i + 1, len(self.names_models)):
-                self.display.DisplayShape(self.modules[self.names_models[i]], color='RED', transparency=0.9)
-                self.display.DisplayShape(self.modules[self.names_models[j]], color='RED', transparency=0.9)
+                # self.display.DisplayShape(self.modules[self.names_models[i]], color='RED', transparency=0.9)
+                # self.display.DisplayShape(self.modules[self.names_models[j]], color='RED', transparency=0.9)
                 print(self.names_models[i], self.names_models[j])
                 if self.names_models[i] == self.names_models[j]: continue
                 body_inter = BRepAlgoAPI_Section(self.modules[self.names_models[i]],
-                                                self.modules[self.names_models[j]]).Shape()
-                self.display.DisplayShape(body_inter, color='WHITE')
-                brepgprop_VolumeProperties(body_inter, props)
+                                                 self.modules[self.names_models[j]]).Shape()
+                # self.display.DisplayShape(body_inter, color='WHITE')
+                brepgprop_LinearProperties(body_inter, props)
                 mass = props.Mass()
                 print(mass)
                 if mass > 0:
                     self.inter_mass += mass
                     self.valume_inter_obj[self.names_models[i]][self.names_models[j]] = mass
 
-        self.start_display()
+        #self.start_display()
         return self.inter_mass
         # print(self.valume_inter_obj)
         # print(self.inter_mass)
-
 
     def inter_objects2(self):
 
@@ -543,15 +542,13 @@ class Balance_mass:
                 if self.names_models[i] == self.names_models[j]: continue
                 body_inter = BRepAlgoAPI_Common(self.modules[self.names_models[i]],
                                                 self.modules[self.names_models[j]]).Shape()
-                #self.display.DisplayShape(body_inter, color='WHITE')
+                # self.display.DisplayShape(body_inter, color='WHITE')
                 brepgprop_VolumeProperties(body_inter, props)
                 mass = props.Mass()
                 # print(mass)
                 if mass > 0:
                     self.inter_mass += mass
                     self.valume_inter_obj[self.names_models[i]][self.names_models[j]] = mass
-
-
 
         return self.inter_mass
         # print(self.valume_inter_obj)
@@ -595,7 +592,6 @@ class Balance_mass:
 
         self.save_all_assamle()
 
-
     def optimithation2(self):
         print('Start optimithtion')
         print(self.history_args)
@@ -606,8 +602,8 @@ class Balance_mass:
 
         for name in self.history_args:
             for i in self.history_args[name]:
-             x0.append(i)
-        #x0 = self.history_args[self.current_body]
+                x0.append(i)
+        # x0 = self.history_args[self.current_body]
         res = minimize(self.goal_function2, x0, method='powell',
                        options={'ftol': 0.1, 'disp': True})
 
@@ -636,24 +632,28 @@ class Balance_mass:
         for name in self.history_args:
             for i in self.history_args[name]:
                 x0.append(i)
-                args.append([i in range(0, 8)])
-                args.append([i in range(int((-self.px+self.test_var)/2), int((self.px-self.test_var)/2), 1)])
-                args.append([i in range(int((-self.pz+self.test_var)/2), int((self.pz-self.test_var)/2), 1)])
-                args.append([i in range(-90, 270, 90)])
+            args.append([t for t in range(0, 8)])
+            args.append(
+                [t for t in range(int((-self.px + self.test_var) / 2), int((self.px - self.test_var) / 2), 1)])
+            args.append(
+                [t for t in range(int((-self.pz + self.test_var) / 2), int((self.pz - self.test_var) / 2), 1)])
+            args.append([t for t in range(-90, 270, 90)])
 
             bounds.append((1, 8))
-            bounds.append((-self.px/2, self.px/2))
-            bounds.append((-self.pz/2, self.pz/2))
+            bounds.append(((-self.px / 2 + self.test_var), (self.px / 2 - self.test_var)))
+            bounds.append(((-self.pz / 2 + self.test_var), (self.pz / 2 - self.test_var)))
             bounds.append((-180, 180))
-        #x0 = self.history_args[self.current_body]
-        #res = minimize(self.goal_function2, x0, method='powell', options={'ftol': 0.1, 'disp': True})
-        result = differential_evolution(self.goal_function2, bounds, maxiter = 200, disp=True, popsize=10, workers=3)#, x0)
+        # x0 = self.history_args[self.current_body]
+        # res = minimize(self.goal_function2, x0, method='powell', options={'ftol': 0.1, 'disp': True})
+        print(len(args), len(bounds))
+        result = differential_evolution(self.goal_function2, bounds=bounds, maxiter=200, disp=True,
+                                        popsize=10, workers=6)  # , x0)
         '''fig = plt.figure()
         plt.plot(self.progress)
         fig.savefig('progress.png')'''
         print(result.x, result.fun)
 
-        with open("file3.txt", 'w') as f:
+        with open("file4.txt", 'w') as f:
             for s in self.progress:
                 f.write(str(s) + '\n')
 
@@ -662,10 +662,9 @@ class Balance_mass:
     def entering_result(self, args):
 
         for i, name in enumerate(self.history_args):
-            self.change_position1(name, args[i*4], args[i*4+1], args[i*4+2], args[i*4+3])
+            self.change_position1(name, args[i * 4], args[i * 4 + 1], args[i * 4 + 2], args[i * 4 + 3])
 
         self.save_all_assamle()
-
 
     def centre_mass_assamble(self):
 
@@ -687,7 +686,6 @@ class Balance_mass:
         from OCC.Core.BOPAlgo import BOPAlgo_Builder
         print(self.modules.keys())
         builder = BOPAlgo_Builder()
-
 
         for name in self.modules:
             builder.AddArgument(self.modules[name])
@@ -716,7 +714,7 @@ class Balance_mass:
             mat.Value(2, 1)) + abs(mat.Value(3, 1)) + abs(mat.Value(3, 2))
 
         var1, var2 = (cog_x ** 2 + cog_y ** 2 + cog_z ** 2) ** 0.5, variation_inertial
-        if var1 < 0.0001 or var2 < 0.0001: var1, var2 = 10**10, 10**10
+        if var1 < 0.0001 or var2 < 0.0001: var1, var2 = 10 ** 10, 10 ** 10
         return var1, var2
 
     def moment_inertial(self, shape):
@@ -729,17 +727,17 @@ class Balance_mass:
         intr2 = 100 * self.one_obj_with_all(self.current_body)
         var1, var2 = self.centre_mass_assamble()
         var1 *= 1000
-        print(' Ipophe: ', self.ipoph+1, ' Name: ', self.current_body, ' Intr_frame: ', intr1, ' Intr_models: ', intr2,
+        print(' Ipophe: ', self.ipoph + 1, ' Name: ', self.current_body, ' Intr_frame: ', intr1, ' Intr_models: ',
+              intr2,
               ' Var_mass: ', var1, ' Var_inertial: ', var2, ' Summ:',
               intr1 + intr2 + var1 + var2)
 
         return intr1 + intr2 + var1 + var2
 
-
     def goal_function2(self, args):
 
         for i, name in enumerate(self.history_args):
-            self.change_position1(name, args[i*4], args[i*4+1], args[i*4+2], args[i*4+3])
+            self.change_position1(name, args[i * 4], args[i * 4 + 1], args[i * 4 + 2], args[i * 4 + 3])
 
         intr1 = 1000 * self.inter_with_frame()
         if intr1 == 0:
@@ -748,8 +746,9 @@ class Balance_mass:
                 peep = 1000 * self.peeping_all_frame()
                 if peep == 0:
                     var1, var2 = self.centre_mass_assamble()
-                    var1 *= 1000
-                    print(' Iteration: ', self.iteration, ' Intr_frame: ', intr1, ' Intr_models: ', intr2, ' Peeping: ', peep,
+                    var1 *= 100000
+                    print(' Iteration: ', self.iteration, ' Intr_frame: ', intr1, ' Intr_models: ', intr2, ' Peeping: ',
+                          peep,
                           ' Var_mass: ', var1, ' Var_inertial: ', var2, ' Summ:',
                           intr1 + intr2 + var1 + var2 + peep)
 
@@ -758,9 +757,12 @@ class Balance_mass:
                     if res == 0.1 and self.flag == 0:
                         self.save_all_assamle()
                         self.flag = 1
-                else: res = 10**10
-            else: res = 10**15
-        else: res = 10**20
+                else:
+                    res = 10 ** 10
+            else:
+                res = 10 ** 15
+        else:
+            res = 10 ** 20
         print(self.iteration)
         self.iteration += 1
         return res
@@ -775,7 +777,7 @@ class Balance_mass:
 
         # transfer shapes and write file
         step_writer.Transfer(shape, STEPControl_AsIs)
-        status = step_writer.Write("assembly.stp")
+        status = step_writer.Write("assembly2.stp")
 
         if status != IFSelect_RetDone:
             raise AssertionError("load failed")
@@ -792,7 +794,7 @@ class Balance_mass:
         self.start_display()
 
     def vizualization_all(self):
-        #self.display, self.start_display, self.add_menu, self.add_function_to_menu = init_display()
+        self.display, self.start_display, self.add_menu, self.add_function_to_menu = init_display()
         frame1 = read_step_file(os.path.join('part_of_sattelate', 'karkase', self.name_frame))
         self.display.DisplayShape(frame1, color='GREEN', transparency=0.9)
         for model in self.modules:
@@ -834,32 +836,36 @@ class Balance_mass:
 if __name__ == '__main__':
     frame = ['part_of_sattelate', 'karkase', 'Assemb.STEP']
     modules = [  # ['part_of_sattelate', 'pribore', 'Camara2_WS16.STEP'],
-        #['part_of_sattelate', 'pribore', 'DAV_WS16.STEP'],
+        ['part_of_sattelate', 'pribore', 'DAV_WS16.STEP'],
         # ['part_of_sattelate', 'pribore', 'All_SEP_WS16.STEP'],
-        #['part_of_sattelate', 'pribore', 'Magnitometr.STEP'],
+        # ['part_of_sattelate', 'pribore', 'Magnitometr.STEP'],
         # ['part_of_sattelate', 'pribore', 'Mahovik_WS16.STEP'],
-        #['part_of_sattelate', 'pribore', 'Radio_WS16.STEP'],
-        #['part_of_sattelate', 'pribore', 'Solar_battery_WS16.STEP'],
+        # ['part_of_sattelate', 'pribore', 'Radio_WS16.STEP'],
+        # ['part_of_sattelate', 'pribore', 'Solar_battery_WS16.STEP'],
         ['part_of_sattelate', 'pribore', 'UKV.STEP'],
-        #['part_of_sattelate', 'pribore', 'DAV_WS16.STEP'],
+        # ['part_of_sattelate', 'pribore', 'DAV_WS16.STEP'],
         ['part_of_sattelate', 'pribore', 'Vch_translator_WS16.STEP']]
 
     test = Balance_mass('Assemb.STEP', modules)
     test.move_frame()
     test.body_random2()
     # test.centre_mass_assamble()
-    #test.optimithation2()
+    # test.optimithation2()
     ###########################################
     #test.optimithation_evolution()
     ###########################################
-    #args = [2.64585885, 3.43770613, -12.86516986, 10.30736343, 2.23339371, 12.30923883, -1.55528775, 146.94101023]
-    args = [2.64585885, 3.43770613, -13.86516986, 10.30736343, 2.23339371, 13.30923883, -1.55528775, 146.94101023]
-    test.entering_result(args)
-    test.goal_function2(args)
-
+    # args = [2.64585885, 3.43770613, -12.86516986, 10.30736343, 2.23339371, 12.30923883, -1.55528775, 146.94101023]
+    # args = [2.64585885, 3.43770613, -13.86516986, 10.30736343, 2.23339371, 13.30923883, -1.55528775, 146.94101023]
+    # test.entering_result(args)
+    # test.goal_function2(args)
+'''
+    [7.51001316   1.55047024 - 60.61354688   6.2800576    7.80732632
+     - 32.02939346   7.67707029  82.08419442   7.26716528  45.70335146
+     65.58692797 - 84.16653524]
+    1951582.0308077983'''
     # test.inter_with_frame()
     # test.peeping_all_frame()
     # test.inter_objects()
     # test.remove_inter_frame()
-    #test.vizualization_all()
-    #test.move_frame()
+    # test.vizualization_all()
+    # test.move_frame()
