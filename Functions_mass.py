@@ -630,19 +630,10 @@ class Balance_mass:
             x0.append(self.history_args[name])'''
 
         for name in self.history_args:
-            for i in self.history_args[name]:
-                x0.append(i)
-            args.append([t for t in range(0, 8)])
-            args.append(
-                [t for t in range(int((-self.px + self.test_var) / 2), int((self.px - self.test_var) / 2), 1)])
-            args.append(
-                [t for t in range(int((-self.pz + self.test_var) / 2), int((self.pz - self.test_var) / 2), 1)])
-            args.append([t for t in range(-90, 270, 90)])
-
             bounds.append((1, 8))
             bounds.append(((-self.px / 2 + self.test_var), (self.px / 2 - self.test_var)))
             bounds.append(((-self.pz / 2 + self.test_var), (self.pz / 2 - self.test_var)))
-            bounds.append((-180, 180))
+            bounds.append((-2, 2))
         # x0 = self.history_args[self.current_body]
         # res = minimize(self.goal_function2, x0, method='powell', options={'ftol': 0.1, 'disp': True})
         print(len(args), len(bounds))
@@ -737,7 +728,7 @@ class Balance_mass:
     def goal_function2(self, args):
 
         for i, name in enumerate(self.history_args):
-            self.change_position1(name, args[i * 4], args[i * 4 + 1], args[i * 4 + 2], args[i * 4 + 3])
+            self.change_position1(name, int(args[i * 4]), int(args[i * 4 + 1]), int(args[i * 4 + 2]), int(args[i * 4 + 3])*90)
 
         intr1 = 1000 * self.inter_with_frame()
         if intr1 == 0:
