@@ -637,8 +637,8 @@ class Balance_mass:
         # x0 = self.history_args[self.current_body]
         # res = minimize(self.goal_function2, x0, method='powell', options={'ftol': 0.1, 'disp': True})
         print(len(args), len(bounds))
-        result = differential_evolution(self.goal_function2, bounds=bounds, maxiter=200, disp=True,
-                                        popsize=10, workers=6)  # , x0)
+        result = differential_evolution(self.goal_function2, bounds=bounds, maxiter=150, disp=True,
+                                        popsize=10, workers=7)  # , x0)
         '''fig = plt.figure()
         plt.plot(self.progress)
         fig.savefig('progress.png')'''
@@ -737,7 +737,7 @@ class Balance_mass:
                 peep = 1000 * self.peeping_all_frame()
                 if peep == 0:
                     var1, var2 = self.centre_mass_assamble()
-                    var1 *= 100000
+                    var1 *= 1000000
                     print(' Iteration: ', self.iteration, ' Intr_frame: ', intr1, ' Intr_models: ', intr2, ' Peeping: ',
                           peep,
                           ' Var_mass: ', var1, ' Var_inertial: ', var2, ' Summ:',
@@ -768,7 +768,7 @@ class Balance_mass:
 
         # transfer shapes and write file
         step_writer.Transfer(shape, STEPControl_AsIs)
-        status = step_writer.Write("assembly2.stp")
+        status = step_writer.Write("assembly3.stp")
 
         if status != IFSelect_RetDone:
             raise AssertionError("load failed")
@@ -843,13 +843,13 @@ if __name__ == '__main__':
     # test.centre_mass_assamble()
     # test.optimithation2()
     ###########################################
-    #test.optimithation_evolution()
+    test.optimithation_evolution()
     ###########################################
     # args = [2.64585885, 3.43770613, -12.86516986, 10.30736343, 2.23339371, 12.30923883, -1.55528775, 146.94101023]
     # args = [2.64585885, 3.43770613, -13.86516986, 10.30736343, 2.23339371, 13.30923883, -1.55528775, 146.94101023]
     # test.entering_result(args)
     # test.goal_function2(args)
-'''
+    '''
     [7.51001316   1.55047024 - 60.61354688   6.2800576    7.80732632
      - 32.02939346   7.67707029  82.08419442   7.26716528  45.70335146
      65.58692797 - 84.16653524]
@@ -858,5 +858,5 @@ if __name__ == '__main__':
     # test.peeping_all_frame()
     # test.inter_objects()
     # test.remove_inter_frame()
-    # test.vizualization_all()
-    # test.move_frame()
+    test.vizualization_all()
+    #test.move_frame()
