@@ -737,7 +737,8 @@ class Balance_mass:
                 peep = 1000 * self.peeping_all_frame()
                 if peep == 0:
                     var1, var2 = self.centre_mass_assamble()
-                    var1 *= 1000000
+                    var1 = var1/100
+                    var2 = var2/(10**10)
                     print(' Iteration: ', self.iteration, ' Intr_frame: ', intr1, ' Intr_models: ', intr2, ' Peeping: ',
                           peep,
                           ' Var_mass: ', var1, ' Var_inertial: ', var2, ' Summ:',
