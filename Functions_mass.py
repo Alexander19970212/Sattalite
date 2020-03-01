@@ -638,7 +638,7 @@ class Balance_mass:
         # res = minimize(self.goal_function2, x0, method='powell', options={'ftol': 0.1, 'disp': True})
         print(len(args), len(bounds))
         result = differential_evolution(self.goal_function2, bounds=bounds, maxiter=150, disp=True,
-                                        popsize=10, workers=7)  # , x0)
+                                        popsize=10, workers=4)  # , x0)
         '''fig = plt.figure()
         plt.plot(self.progress)
         fig.savefig('progress.png')'''
