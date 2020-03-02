@@ -71,8 +71,9 @@ class Balance_mass:
         self.walls = {}
 
         for number, wall in enumerate(walls):
-            self.walls[number] = [[wall[0], wall[1], wall[2]], [wall[3], wall[4], wall[5]], [wall[6], wall[7], wall[8]], [wall[9],
-                                                                                                         wall[10]]]
+            self.walls[number] = [[wall[0], wall[1], wall[2]], [wall[3], wall[4], wall[5]], [wall[6], wall[7], wall[8]],
+                                  [wall[9],
+                                   wall[10]]]
 
     def Body_change_location(self, number, name_body):
         cp = BRepBuilderAPI_Copy(self.reserv_models[name_body])
@@ -87,22 +88,14 @@ class Balance_mass:
         trsf.SetTranslation(gp_Vec(0, 0, -zmin))
         shape.Move(TopLoc_Location(trsf))
 
-        Ax0 = gp_Ax3(gp_Pnt(0, 0, 0), gp_Dir(self.walls[number][1][2], self.walls[number][1][1], self.walls[number][1][0]))  # ,gp_Dir(gp_Vec(gp_Pnt(0, 0, 0), gp_Pnt(10, 0, 0))))
+        Ax0 = gp_Ax3(gp_Pnt(0, 0, 0), gp_Dir(0, 0, 10))  # ,gp_Dir(gp_Vec(gp_Pnt(0, 0, 0), gp_Pnt(10, 0, 0))))
 
 
-        '''Ax1 = gp_Ax3(gp_Pnt(self.walls[number][0][0], self.walls[number][0][1], self.walls[number][0][2]),
-                     gp_Dir(gp_Vec(gp_Pnt(self.walls[number][0][0], self.walls[number][0][1], self.walls[number][0][2]),
-                                   gp_Pnt(self.walls[number][1][0], self.walls[number][1][1],
-                                          self.walls[number][1][2]))),
-                     gp_Dir(gp_Vec(
-                         gp_Pnt(self.walls[number][0][0], self.walls[number][0][1], self.walls[number][0][2]),
-                         gp_Pnt(self.walls[number][2][0], self.walls[number][2][1], self.walls[number][2][2]))))'''
-
-        Ax1 = gp_Ax3(gp_Pnt(-self.walls[number][0][0], -self.walls[number][0][1], -self.walls[number][0][2]),
-                     gp_Dir(self.walls[number][1][0], self.walls[number][1][1], self.walls[number][1][2]))  # ,gp_Dir(gp_Vec(gp_Pnt(-110, 0, 0), gp_Pnt(110, 20, 0))))
+        Ax1 = gp_Ax3(gp_Pnt(0, 0, -110),
+                     gp_Dir(0, 10, 0), gp_Dir(10, 0, 0))
 
         trsf = gp_Trsf()
-        trsf.SetTransformation(Ax0, Ax1)
+        trsf.SetTransformation(Ax1)
         shape.Move(TopLoc_Location(trsf))
 
         self.modules[name_body] = shape
@@ -134,21 +127,22 @@ class Balance_mass:
         for i, name_body in enumerate(self.reserv_models):
             self.Body_change_location(i, name_body)
 
+
 if __name__ == '__main__':
     frame = ['part_of_sattelate', 'karkase', 'Assemb.STEP']
-    modules = [ ['part_of_sattelate', 'pribore', 'Camara2_WS16.STEP'],
+    modules = [  # ['part_of_sattelate', 'pribore', 'Camara2_WS16.STEP'],
         # ['part_of_sattelate', 'pribore', 'DAV_WS16.STEP'],
         # ['part_of_sattelate', 'pribore', 'All_SEP_WS16.STEP'],
         # ['part_of_sattelate', 'pribore', 'Magnitometr.STEP'],
         # ['p3art_of_sattelate', 'pribore', 'Mahovik_WS16.STEP'],
-        ['part_of_sattelate', 'pribore', 'Radio_WS16.STEP'],
+        # ['part_of_sattelate', 'pribore', 'Radio_WS16.STEP'],
         # ['part_of_sattelate', 'pribore', 'Solar_battery_WS16.STEP'],
-        ['part_of_sattelate', 'pribore', 'UKV.STEP'],
+        # ['part_of_sattelate', 'pribore', 'UKV.STEP'],
         # ['part_of_sattelate', 'pribore', 'DAV_WS16.STEP'],
         ['part_of_sattelate', 'pribore', 'Vch_translator_WS16.STEP']]
-    walls = [[0, 0, 110, 10, 0, 0, 0, 10, 0, 186, 248],
-        [250, 0, 0, 0, 10, 0, 0, 10, 0, 186, 248],
-        [0, 0, 110, -10, 0, 0, 0, 10, 0, 186, 248],
+    walls = [  # [0, 0, 110, 10, 0, 0, 0, 10, 0, 186, 248],
+        # [250, 0, 0, 0, 10, 0, 0, 10, 0, 186, 248],
+        # [0, 0, 110, -10, 0, 0, 0, 10, 0, 186, 248],
         [0, 110, 0,
          10, 0, 0,
          0, 10, 0, 186, 248]]

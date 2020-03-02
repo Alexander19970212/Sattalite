@@ -644,7 +644,7 @@ class Balance_mass:
         fig.savefig('progress.png')'''
         print(result.x, result.fun)
 
-        with open("file4.txt", 'w') as f:
+        with open("file5.txt", 'w') as f:
             for s in self.progress:
                 f.write(str(s) + '\n')
 
@@ -769,7 +769,7 @@ class Balance_mass:
 
         # transfer shapes and write file
         step_writer.Transfer(shape, STEPControl_AsIs)
-        status = step_writer.Write("assembly3.stp")
+        status = step_writer.Write("assembly4.stp")
 
         if status != IFSelect_RetDone:
             raise AssertionError("load failed")
