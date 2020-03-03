@@ -27,7 +27,7 @@ from OCC.Core.TopAbs import TopAbs_EDGE, TopAbs_FACE, TopAbs_REVERSED, TopAbs_SH
     TopAbs_IN
 from OCCUtils.Topology import Topo
 from OCC.Core.GProp import GProp_GProps
-from OCC.Core.gp import gp_Pnt, gp_Trsf, gp_Vec, gp_Pln, gp_Dir, gp_Ax3
+from OCC.Core.gp import gp_Pnt, gp_Trsf, gp_Vec, gp_Pln, gp_Dir, gp_Ax3, gp_Ax1
 from OCC.Core.BRepGProp import brepgprop_VolumeProperties, brepgprop_SurfaceProperties, brepgprop_LinearProperties
 from OCC.Core.BRepAlgoAPI import BRepAlgoAPI_Fuse, BRepAlgoAPI_Common, BRepAlgoAPI_Section, BRepAlgoAPI_Cut
 from OCC.Core.Bnd import Bnd_Box
@@ -68,51 +68,62 @@ class Balance_mass:
         for model in modules:
             self.reserv_models[model[2]] = read_step_file(os.path.join(model[0], model[1], model[2]))
 
-        self.walls = {}
+        self.walls = walls
 
-        for number, wall in enumerate(walls):
-            self.walls[number] = [[wall[0], wall[1], wall[2]], [wall[3], wall[4], wall[5]], [wall[6], wall[7], wall[8]],
-                                  [wall[9],
-                                   wall[10]]]
 
-    def Body_change_location(self, number, name_body):
+
+        '''for number, wall in enumerate(walls):
+            self.walls[number] = [[wall[0], wall[1], wall[2]], [wall[3], wall[4], wall[5]], [wall[3], wall[4], wall[5]],
+                                  [wall[6], wall[7]]]'''
+
+    def Locate_centre_face(self, number, name_body, angle):
         cp = BRepBuilderAPI_Copy(self.reserv_models[name_body])
         cp.Perform(self.reserv_models[name_body])
         shape = cp.Shape()
 
+        #move to zero
         bbox = Bnd_Box()
         brepbndlib_Add(shape, bbox)
         xmin, ymin, zmin, xmax, ymax, zmax = bbox.Get()
 
         trsf = gp_Trsf()
-        trsf.SetTranslation(gp_Vec(0, 0, -zmin))
+        trsf.SetTranslation(gp_Vec(-xmin - (xmax-xmin)/2, -ymin - (ymax-ymin)/2, -zmin))
         shape.Move(TopLoc_Location(trsf))
 
-        Ax0 = gp_Ax3(gp_Pnt(0, 0, 0), gp_Dir(0, 0, 10))  # ,gp_Dir(gp_Vec(gp_Pnt(0, 0, 0), gp_Pnt(10, 0, 0))))
+        #Move on the face
+        x = -self.walls[number][1][1]
+        y = self.walls[number][1][0]
+        z = 0
+        P0 = gp_Pnt(0, 0, 0)
+        P1 = gp_Pnt(0, 0, 1)
+        P2 = gp_Pnt(self.walls[number][1][0], self.walls[number][1][1], self.walls[number][1][2])
 
-
-        Ax1 = gp_Ax3(gp_Pnt(0, 0, -110),
-                     gp_Dir(0, 10, 0), gp_Dir(10, 0, 0))
-
+        v0 = gp_Vec(P0, P1)
+        v1 = gp_Vec(P0, P2)
+        print( v1.Angle(v0))
         trsf = gp_Trsf()
-        trsf.SetTransformation(Ax1)
+        trsf.SetRotation(gp_Ax1(P0, gp_Dir(x, y, z)), v1.Angle(v0))
         shape.Move(TopLoc_Location(trsf))
+        trsf = gp_Trsf()
+        trsf.SetTranslation(gp_Vec(self.walls[number][0][0], self.walls[number][0][1], self.walls[number][0][2]))
+        shape.Move(TopLoc_Location(trsf))
+
+        #Rotation by given angle
+        trsf = gp_Trsf()
+        trsf.SetRotation(gp_Ax1(P0, gp_Dir(self.walls[number][1][0], self.walls[number][1][1], self.walls[number][1][2])), angle)
+        shape.Move(TopLoc_Location(trsf))
+
+
 
         self.modules[name_body] = shape
 
-    '''def Paralel_two_axis(self, shape, point1_1, point2_1, point1_2, point2_2):
+    #def rotate_by_centre(self, shape, number, angle, P0, P2):
 
 
-        ax_eld = gp_Vec(gp_Pnt(point1_1[0], point1_1[1], point1_1[2]), gp_Pnt(point1_2[0], point1_2[1], point1_2[2]))
-        ax_eld = gp_Vec(gp_Pnt(point1_1[0], point1_1[1], point1_1[2]), gp_Pnt(point1_2[0], point1_2[1], point1_2[2]))
-        pln_1 = GC_MakePlane(gp_Pnt(point1_1[0], point1_1[1], point1_1[2]), gp_Pnt(point1_2[0], point1_2[1], point1_2[2]), )
 
-
-        trsf = gp_Trsf()
-        trsf.SetRotation(gp_Quaternion(Mat))
-        shape.Move(TopLoc_Location(trsf))'''
 
     def vizualization_all(self):
+        #print(self.modules)
         self.display, self.start_display, self.add_menu, self.add_function_to_menu = init_display()
         frame1 = read_step_file(os.path.join('part_of_sattelate', 'karkase', self.name_frame))
         self.display.DisplayShape(frame1, color='GREEN', transparency=0.9)
@@ -123,31 +134,36 @@ class Balance_mass:
 
     def var_test(self):
 
-        print(self.reserv_models)
+        #print(self.reserv_models)
         for i, name_body in enumerate(self.reserv_models):
-            self.Body_change_location(i, name_body)
+            #print(name_body)
+            self.Locate_centre_face(i, name_body, 1)
 
 
 if __name__ == '__main__':
     frame = ['part_of_sattelate', 'karkase', 'Assemb.STEP']
     modules = [  # ['part_of_sattelate', 'pribore', 'Camara2_WS16.STEP'],
-        # ['part_of_sattelate', 'pribore', 'DAV_WS16.STEP'],
+        ['part_of_sattelate', 'pribore', 'DAV_WS16.STEP'],
         # ['part_of_sattelate', 'pribore', 'All_SEP_WS16.STEP'],
         # ['part_of_sattelate', 'pribore', 'Magnitometr.STEP'],
         # ['p3art_of_sattelate', 'pribore', 'Mahovik_WS16.STEP'],
-        # ['part_of_sattelate', 'pribore', 'Radio_WS16.STEP'],
+        ['part_of_sattelate', 'pribore', 'Radio_WS16.STEP'],
         # ['part_of_sattelate', 'pribore', 'Solar_battery_WS16.STEP'],
-        # ['part_of_sattelate', 'pribore', 'UKV.STEP'],
-        # ['part_of_sattelate', 'pribore', 'DAV_WS16.STEP'],
+        ['part_of_sattelate', 'pribore', 'UKV.STEP'],
+        # ['part_of_sattelate', 'pribore', 'DAV2_WS16.STEP'],
         ['part_of_sattelate', 'pribore', 'Vch_translator_WS16.STEP']]
-    walls = [  # [0, 0, 110, 10, 0, 0, 0, 10, 0, 186, 248],
-        # [250, 0, 0, 0, 10, 0, 0, 10, 0, 186, 248],
-        # [0, 0, 110, -10, 0, 0, 0, 10, 0, 186, 248],
-        [0, 110, 0,
-         10, 0, 0,
-         0, 10, 0, 186, 248]]
+    '''walls = [[110, 0, 10, 0, -10, 0, 0, 186, 248],
+             [110, 0, 10, 0, 0, 0, 10, 186, 248],
+             [110, 0, 10, 0, 10, 0, 0, 186, 248],
+             [110, 0, 10, 0, 0, 0, -10, 186, 248], ]'''
+
+    walls = [[[0, 110, 0], [0, 1, 0], [1, 0, 0], [186, 248]],
+             [[110, 0, 0], [1, 0, 0], [0, -1, 0], [186, 248]],
+             [[0, -110, 0], [0, -1, 0], [-1, 0, 0], [186, 248]],
+             [[-110, 0, 0], [-1, 0, 0], [0, 1, 0], [186, 248]]]
 
     # distant between xero point and face plt, normal of wall
+    # distant between zero point anf face plt, vector that will drop axis z, vector сонаправленный X
 
     test = Balance_mass('Assemb.STEP', modules, walls)
     test.var_test()
