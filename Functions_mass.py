@@ -644,7 +644,7 @@ class Balance_mass:
         fig.savefig('progress.png')'''
         print(result.x, result.fun)
 
-        with open("file5.txt", 'w') as f:
+        with open("file6.txt", 'w') as f:
             for s in self.progress:
                 f.write(str(s) + '\n')
 
@@ -769,7 +769,7 @@ class Balance_mass:
 
         # transfer shapes and write file
         step_writer.Transfer(shape, STEPControl_AsIs)
-        status = step_writer.Write("assembly4.stp")
+        status = step_writer.Write("assembly5.stp")
 
         if status != IFSelect_RetDone:
             raise AssertionError("load failed")
@@ -829,6 +829,11 @@ if __name__ == '__main__':
     frame = ['part_of_sattelate', 'karkase', 'Assemb.STEP']
     modules = [  # ['part_of_sattelate', 'pribore', 'Camara2_WS16.STEP'],
         ['part_of_sattelate', 'pribore', 'DAV_WS16.STEP'],
+        ['part_of_sattelate', 'pribore', 'DAV2_WS16.STEP'],
+        ['part_of_sattelate', 'pribore', 'DAV3_WS16.STEP'],
+        ['part_of_sattelate', 'pribore', 'DAV4_WS16.STEP'],
+        ['part_of_sattelate', 'pribore', 'DAV5_WS16.STEP'],
+        ['part_of_sattelate', 'pribore', 'DAV6_WS16.STEP'],
         # ['part_of_sattelate', 'pribore', 'All_SEP_WS16.STEP'],
         # ['part_of_sattelate', 'pribore', 'Magnitometr.STEP'],
         # ['part_of_sattelate', 'pribore', 'Mahovik_WS16.STEP'],
