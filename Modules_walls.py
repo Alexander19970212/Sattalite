@@ -230,6 +230,8 @@ class Balance_mass:
 
             mass = mass_frame - mass_frame_2
 
+            #КОнтрольные суммы
+
 
 
 
