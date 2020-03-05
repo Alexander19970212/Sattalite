@@ -50,6 +50,8 @@ from scipy.optimize import minimize
 from collections import defaultdict
 from OCC.Core.GC import GC_MakePlane
 from OCC.Core.BOPAlgo import BOPAlgo_COMMON
+from OCC.Core.TopOpeBRep import TopOpeBRep_ShapeIntersector
+from OCC.Core.BRepExtrema import BRepExtrema_DistShapeShape
 import math
 
 
@@ -205,16 +207,49 @@ class Balance_mass:
     def inter_with_frame(self):
         # print('Start_inter_analyse')
         all_result = 0
-        props = GProp_GProps()
+
+
         # print(self.modules)
         for model in self.modules:
             # print('#')
+            props = GProp_GProps()
             body_inter = BRepAlgoAPI_Common(self.frame, self.modules[model]).Shape()
             # self.display.DisplayShape(body_inter, color='YELLOW')
             brepgprop_VolumeProperties(body_inter, props)
             mass = props.Mass()
-            if mass > 0:
-                all_result += mass
+
+
+
+            '''props = GProp_GProps()
+            inter = TopOpeBRep_ShapeIntersector()
+            inter.InitIntersection(self.modules[model], self.frame)
+            flag = inter.MoreIntersection()
+            body_inter = inter.CurrentGeomShape(1)
+            brepgprop_VolumeProperties(body_inter, props)
+            mass = props.Mass()
+
+            props = GProp_GProps()
+            body_inter = inter.CurrentGeomShape(2)
+            brepgprop_VolumeProperties(body_inter, props)
+            mass = abs(mass) + abs(props.Mass())'''
+
+
+
+
+            '''dss = BRepExtrema_DistShapeShape()
+            dss.LoadS1(self.modules[model])
+            dss.LoadS2(self.frame)
+            dss.Perform()
+
+            flag = dss.IsDone()
+            mass = dss.Value()
+            print(mass)
+            print(flag)'''
+            print(mass)
+
+            if mass>0:
+                #print(mass)
+                all_result += 1
 
         return all_result
 
@@ -223,7 +258,7 @@ class Balance_mass:
         # print(self.reserv_models)
         for i, name_body in enumerate(self.reserv_models):
             # print(name_body)
-            self.Locate_centre_face(i, name_body, 0, 1, 1)
+            self.Locate_centre_face(i, name_body, math.radians(5), 1, -1)
 
 
 if __name__ == '__main__':
