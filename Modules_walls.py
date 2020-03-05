@@ -58,6 +58,7 @@ import math
 class Balance_mass:
     def __init__(self, frame, modules, walls):
 
+        self.display, self.start_display, self.add_menu, self.add_function_to_menu = init_display()
         self.name_frame = frame
         self.modules = {}
         self.names_models = []
@@ -179,7 +180,7 @@ class Balance_mass:
 
     def vizualization_all(self):
         # print(self.modules)
-        self.display, self.start_display, self.add_menu, self.add_function_to_menu = init_display()
+        #self.display, self.start_display, self.add_menu, self.add_function_to_menu = init_display()
         frame1 = read_step_file(os.path.join('part_of_sattelate', 'karkase', self.name_frame))
         self.display.DisplayShape(frame1, color='GREEN', transparency=0.9)
         for model in self.modules:
@@ -207,16 +208,28 @@ class Balance_mass:
     def inter_with_frame(self):
         # print('Start_inter_analyse')
         all_result = 0
+        props = GProp_GProps()
+        # self.display.DisplayShape(body_inter, color='YELLOW')
+        brepgprop_VolumeProperties(self.frame, props)
+        mass_frame = props.Mass()
+
+        cp = BRepBuilderAPI_Copy(self.frame)
+        cp.Perform(self.frame)
+        shape = cp.Shape()
 
 
         # print(self.modules)
         for model in self.modules:
             # print('#')
             props = GProp_GProps()
-            body_inter = BRepAlgoAPI_Common(self.frame, self.modules[model]).Shape()
+            new_shape = BRepAlgoAPI_Cut(shape, self.modules[model]).Shape()
             # self.display.DisplayShape(body_inter, color='YELLOW')
-            brepgprop_VolumeProperties(body_inter, props)
-            mass = props.Mass()
+            brepgprop_VolumeProperties(new_shape, props)
+            mass_frame_2 = props.Mass()
+            self.display.DisplayShape(new_shape, color='YELLOW', transparency=0.9)
+
+            mass = mass_frame - mass_frame_2
+
 
 
 
@@ -247,7 +260,7 @@ class Balance_mass:
             print(flag)'''
             print(mass)
 
-            if mass>0:
+            if abs(mass) > 1e-06:
                 #print(mass)
                 all_result += 1
 
@@ -258,7 +271,7 @@ class Balance_mass:
         # print(self.reserv_models)
         for i, name_body in enumerate(self.reserv_models):
             # print(name_body)
-            self.Locate_centre_face(i, name_body, math.radians(5), 1, -1)
+            self.Locate_centre_face(i, name_body, math.radians(90), 1, 0)
 
 
 if __name__ == '__main__':
