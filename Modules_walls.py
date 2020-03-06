@@ -64,6 +64,7 @@ class Balance_mass:
         self.modules = {}
         self.names_models = []
         self.history_args = {}
+        self.progress = []
         self.valume_inter_obj = defaultdict(dict)
 
         # for testing, remove later
@@ -128,7 +129,7 @@ class Balance_mass:
         # rotation in parallel to face
         v0 = gp_Vec(P0, P1)
         v1 = gp_Vec(P0, P2)
-        #print(v1.Angle(v0))
+        # print(v1.Angle(v0))
         trsf = gp_Trsf()
         trsf.SetRotation(gp_Ax1(P0, gp_Dir(x, y, z)), v1.Angle(v0))
         # move to face
@@ -152,7 +153,6 @@ class Balance_mass:
         move_x = limit_x * x_drive
         move_y = limit_y * y_drive
 
-
         # Move to x and y
         x_axy = self.walls[number][1][1] * self.walls[number][2][2] - self.walls[number][1][2] * self.walls[number][2][
             1]
@@ -161,7 +161,6 @@ class Balance_mass:
                       0])
         z_axy = self.walls[number][1][0] * self.walls[number][2][1] - self.walls[number][1][1] * self.walls[number][2][
             0]
-
 
         x_axy *= move_y
         y_axy *= move_y
@@ -180,9 +179,85 @@ class Balance_mass:
 
     # def rotate_by_centre(self, shape, number, angle, P0, P2):
 
+    def optimithation_evolution(self):
+        from scipy.optimize import differential_evolution
+        print('Start optimithtion')
+
+        bounds = []
+
+
+        for name in self.reserv_models:
+            bounds.append((-1, 1))
+            bounds.append((-1, 1))
+            bounds.append((-1, 1))
+            bounds.append((-1, 1))
+
+        result = differential_evolution(self.goal_function2, bounds=bounds, maxiter=150, disp=True,
+                                        popsize=10, workers=4)  # , x0)
+
+        print(result.x, result.fun)
+
+        with open("file7.txt", 'w') as f:
+            for s in self.progress:
+                f.write(str(s) + '\n')
+
+        self.save_all_assamle()
+
+    def save_all_assamle(self):
+        from OCC.Core.BOPAlgo import BOPAlgo_Builder
+        print(self.modules.keys())
+        builder = BOPAlgo_Builder()
+
+        for name in self.modules:
+            builder.AddArgument(self.modules[name])
+
+        builder.SetRunParallel(True)
+        builder.Perform()
+        shape = builder.Shape()
+        self.save_assembly(shape)
+
+    def goal_function2(self, args):
+
+        m = len(self.names_models)
+
+        for i, name in enumerate(self.history_args):
+            self.Locate_centre_face(int(m * (args[i * 4] + 1) / 2), name, (int(args[i * 4 + 1] + 1) * 2),
+                                    int(args[i * 4 + 2]), int(args[i * 4 + 3]))
+
+        intr1 = self.inter_with_frame()
+        if intr1 == 0:
+            intr2 = self.inter_objects()
+            if intr2 == 0:
+                var1, var2 = self.centre_mass()
+                var1 = var1 / 100
+                var2 = var2 / (10 ** 10)
+                res = var1 + var2
+                self.progress.append(res)
+
+            else:
+                res = 1
+        else:
+            res = 1
+        return res
+
+    def save_assembly(self, shape):
+        from OCC.Core.STEPControl import STEPControl_Writer, STEPControl_AsIs
+        from OCC.Core.Interface import Interface_Static_SetCVal
+        from OCC.Core.IFSelect import IFSelect_RetDone
+
+        step_writer = STEPControl_Writer()
+        Interface_Static_SetCVal("write.step.schema", "AP203")
+
+        # transfer shapes and write file
+        step_writer.Transfer(shape, STEPControl_AsIs)
+        status = step_writer.Write("assembly5.stp")
+
+        if status != IFSelect_RetDone:
+            raise AssertionError("load failed")
+
     def vizualization_all(self):
         # print(self.modules)
-        #self.display, self.start_display, self.add_menu, self.add_function_to_menu = init_display()
+        # self.display, self.start_display, self.add_menu, self.add_function_to_menu = init_display()
         frame1 = read_step_file(os.path.join('part_of_sattelate', 'karkase', self.name_frame))
         self.display.DisplayShape(frame1, color='GREEN', transparency=0.9)
         for model in self.modules:
@@ -245,18 +320,14 @@ class Balance_mass:
         m_w_frame = builder.Shape()'''
 
         self.m_w_frame = BRepAlgoAPI_Fuse(shape, models).Shape()
-        #self.display.DisplayShape(m_w_frame, color='YELLOW', transparency=0.9)
+        # self.display.DisplayShape(m_w_frame, color='YELLOW', transparency=0.9)
 
         props = GProp_GProps()
 
         brepgprop_VolumeProperties(self.m_w_frame, props)
         mass_2 = props.Mass()
 
-        mass = mass_1-mass_2
-
-
-
-
+        mass = mass_1 - mass_2
 
         # print(self.modules)
         '''for model in self.modules:
@@ -295,7 +366,7 @@ class Balance_mass:
         print(mass)
 
         if mass > 1e-6:
-            #print(mass)
+            # print(mass)
             all_result += 1
 
         return all_result
@@ -309,17 +380,17 @@ class Balance_mass:
 
         for i in range(len(self.names_models) - 1):
             for j in range(i + 1, len(self.names_models)):
-                #print(self.names_models[i], self.names_models[j])
+                # print(self.names_models[i], self.names_models[j])
                 if self.names_models[i] == self.names_models[j]: continue
                 body_inter = BRepAlgoAPI_Section(self.modules[self.names_models[i]],
                                                  self.modules[self.names_models[j]]).Shape()
                 brepgprop_LinearProperties(body_inter, props)
                 mass = props.Mass()
-                #print(mass)
+                # print(mass)
                 if mass > 0:
                     inter_mass += mass
 
-        #self.start_display()
+        # self.start_display()
         return inter_mass
 
     def centre_mass(self):
@@ -379,7 +450,8 @@ if __name__ == '__main__':
     # distant between zero point anf face plt, vector that will drop axis z, vector сонаправленный X
 
     test = Balance_mass('Assemb.STEP', modules, walls)
-    test.var_test()
+    #test.var_test()
+    test.optimithation_evolution()
     test.move_frame()
     print(test.inter_with_frame())
     test.vizualization_all()
