@@ -73,6 +73,7 @@ class Balance_mass:
         # self.display, self.start_display, self.add_menu, self.add_function_to_menu = init_display()
         for model in modules:
             self.reserv_models[model[2]] = read_step_file(os.path.join(model[0], model[1], model[2]))
+            self.names_models.append(model[2])
 
         self.walls = walls
 
@@ -243,12 +244,12 @@ class Balance_mass:
         builder.Perform()
         m_w_frame = builder.Shape()'''
 
-        m_w_frame = BRepAlgoAPI_Fuse(shape, models).Shape()
+        self.m_w_frame = BRepAlgoAPI_Fuse(shape, models).Shape()
         #self.display.DisplayShape(m_w_frame, color='YELLOW', transparency=0.9)
 
         props = GProp_GProps()
 
-        brepgprop_VolumeProperties(m_w_frame, props)
+        brepgprop_VolumeProperties(self.m_w_frame, props)
         mass_2 = props.Mass()
 
         mass = mass_1-mass_2
@@ -298,6 +299,50 @@ class Balance_mass:
             all_result += 1
 
         return all_result
+
+    def inter_objects(self):
+
+        # print('Start_inter_analyse')
+        inter_mass = 0
+        props = GProp_GProps()
+        # print(self.names_models)
+
+        for i in range(len(self.names_models) - 1):
+            for j in range(i + 1, len(self.names_models)):
+                #print(self.names_models[i], self.names_models[j])
+                if self.names_models[i] == self.names_models[j]: continue
+                body_inter = BRepAlgoAPI_Section(self.modules[self.names_models[i]],
+                                                 self.modules[self.names_models[j]]).Shape()
+                brepgprop_LinearProperties(body_inter, props)
+                mass = props.Mass()
+                #print(mass)
+                if mass > 0:
+                    inter_mass += mass
+
+        #self.start_display()
+        return inter_mass
+
+    def centre_mass(self):
+
+        props = GProp_GProps()
+        brepgprop_VolumeProperties(self.m_w_frame, props)
+        # Get inertia properties
+        mass = props.Mass()
+        cog = props.CentreOfMass()
+        matrix_of_inertia = props.MatrixOfInertia()
+        # Display inertia properties
+        # print("Cube mass = %s" % mass)
+        cog_x, cog_y, cog_z = cog.Coord()
+        # print("Center of mass: x = %f;y = %f;z = %f;" % (cog_x, cog_y, cog_z))
+        mat = props.MatrixOfInertia()
+        #######################################################################################
+
+        variation_inertial = abs(mat.Value(2, 3)) + abs(mat.Value(1, 2)) + abs(mat.Value(1, 3)) + abs(
+            mat.Value(2, 1)) + abs(mat.Value(3, 1)) + abs(mat.Value(3, 2))
+
+        var1, var2 = (cog_x ** 2 + cog_y ** 2 + cog_z ** 2) ** 0.5, variation_inertial
+        if var1 < 0.0001 or var2 < 0.0001: var1, var2 = 10 ** 10, 10 ** 10
+        return var1, var2
 
     def var_test(self):
 
