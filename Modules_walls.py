@@ -52,6 +52,7 @@ from OCC.Core.GC import GC_MakePlane
 from OCC.Core.BOPAlgo import BOPAlgo_COMMON
 from OCC.Core.TopOpeBRep import TopOpeBRep_ShapeIntersector
 from OCC.Core.BRepExtrema import BRepExtrema_DistShapeShape
+from OCC.Core.BOPAlgo import BOPAlgo_Builder
 import math
 
 
@@ -217,9 +218,47 @@ class Balance_mass:
         cp.Perform(self.frame)
         shape = cp.Shape()
 
+        builder = BOPAlgo_Builder()
+
+        for name in self.modules:
+            builder.AddArgument(self.modules[name])
+
+        builder.SetRunParallel(True)
+        builder.Perform()
+        models = builder.Shape()
+
+        props = GProp_GProps()
+        # self.display.DisplayShape(body_inter, color='YELLOW')
+        brepgprop_VolumeProperties(models, props)
+        mass_models = props.Mass()
+
+        mass_1 = mass_frame + mass_models
+
+        '''builder = BOPAlgo_Builder()
+
+        builder.AddArgument(shape)
+        builder.AddArgument(models)
+
+        builder.SetRunParallel(True)
+        builder.Perform()
+        m_w_frame = builder.Shape()'''
+
+        m_w_frame = BRepAlgoAPI_Fuse(shape, models).Shape()
+        #self.display.DisplayShape(m_w_frame, color='YELLOW', transparency=0.9)
+
+        props = GProp_GProps()
+
+        brepgprop_VolumeProperties(m_w_frame, props)
+        mass_2 = props.Mass()
+
+        mass = mass_1-mass_2
+
+
+
+
 
         # print(self.modules)
-        for model in self.modules:
+        '''for model in self.modules:
             # print('#')
             props = GProp_GProps()
             new_shape = BRepAlgoAPI_Cut(shape, self.modules[model]).Shape()
@@ -230,12 +269,7 @@ class Balance_mass:
 
             mass = mass_frame - mass_frame_2
 
-            #КОнтрольные суммы
-
-
-
-
-            '''props = GProp_GProps()
+            props = GProp_GProps()
             inter = TopOpeBRep_ShapeIntersector()
             inter.InitIntersection(self.modules[model], self.frame)
             flag = inter.MoreIntersection()
@@ -246,12 +280,9 @@ class Balance_mass:
             props = GProp_GProps()
             body_inter = inter.CurrentGeomShape(2)
             brepgprop_VolumeProperties(body_inter, props)
-            mass = abs(mass) + abs(props.Mass())'''
+            mass = abs(mass) + abs(props.Mass())
 
-
-
-
-            '''dss = BRepExtrema_DistShapeShape()
+            dss = BRepExtrema_DistShapeShape()
             dss.LoadS1(self.modules[model])
             dss.LoadS2(self.frame)
             dss.Perform()
@@ -260,11 +291,11 @@ class Balance_mass:
             mass = dss.Value()
             print(mass)
             print(flag)'''
-            print(mass)
+        print(mass)
 
-            if abs(mass) > 1e-06:
-                #print(mass)
-                all_result += 1
+        if mass > 1e-6:
+            #print(mass)
+            all_result += 1
 
         return all_result
 
@@ -273,7 +304,7 @@ class Balance_mass:
         # print(self.reserv_models)
         for i, name_body in enumerate(self.reserv_models):
             # print(name_body)
-            self.Locate_centre_face(i, name_body, math.radians(90), 1, 0)
+            self.Locate_centre_face(i, name_body, math.radians(30), 0, 0)
 
 
 if __name__ == '__main__':
