@@ -59,7 +59,7 @@ import math
 class Balance_mass:
     def __init__(self, frame, modules, walls):
 
-        self.display, self.start_display, self.add_menu, self.add_function_to_menu = init_display()
+        #self.display, self.start_display, self.add_menu, self.add_function_to_menu = init_display()
         self.name_frame = frame
         self.modules = {}
         self.names_models = []
@@ -174,6 +174,7 @@ class Balance_mass:
         trsf.SetTranslation(gp_Vec(self.walls[number][2][0] * move_x, self.walls[number][2][1] * move_x,
                                    self.walls[number][2][2] * move_x))
         shape.Move(TopLoc_Location(trsf))
+        #print(name_body, shape)
 
         self.modules[name_body] = shape
 
@@ -187,13 +188,10 @@ class Balance_mass:
 
 
         for name in self.reserv_models:
-            bounds.append((-1, 1))
-            bounds.append((-1, 1))
-            bounds.append((-1, 1))
-            bounds.append((-1, 1))
-
+            for i in range(4):
+                bounds.append((-1, 1))
         result = differential_evolution(self.goal_function2, bounds=bounds, maxiter=150, disp=True,
-                                        popsize=10, workers=4)  # , x0)
+                                        popsize=10, workers=7)  # , x0)
 
         print(result.x, result.fun)
 
@@ -220,15 +218,15 @@ class Balance_mass:
 
         m = len(self.names_models)
 
-        for i, name in enumerate(self.history_args):
-            self.Locate_centre_face(int(m * (args[i * 4] + 1) / 2), name, (int(args[i * 4 + 1] + 1) * 2),
+        for i, name in enumerate(self.reserv_models):
+            self.Locate_centre_face(int(m * (args[i * 4] + 1) / 2), name, math.radians(int(args[i * 4 + 1] + 1) * 2),
                                     int(args[i * 4 + 2]), int(args[i * 4 + 3]))
 
-        intr1 = self.inter_with_frame()
+        intr1 = self.inter_with_frame2()
         if intr1 == 0:
             intr2 = self.inter_objects()
             if intr2 == 0:
-                var1, var2 = self.centre_mass()
+                var1, var2 = self.centre_mass_assamble()
                 var1 = var1 / 100
                 var2 = var2 / (10 ** 10)
                 res = var1 + var2
@@ -257,7 +255,7 @@ class Balance_mass:
 
     def vizualization_all(self):
         # print(self.modules)
-        # self.display, self.start_display, self.add_menu, self.add_function_to_menu = init_display()
+        self.display, self.start_display, self.add_menu, self.add_function_to_menu = init_display()
         frame1 = read_step_file(os.path.join('part_of_sattelate', 'karkase', self.name_frame))
         self.display.DisplayShape(frame1, color='GREEN', transparency=0.9)
         for model in self.modules:
@@ -284,6 +282,7 @@ class Balance_mass:
 
     def inter_with_frame(self):
         # print('Start_inter_analyse')
+        #print(self.names_models)
         all_result = 0
         props = GProp_GProps()
         # self.display.DisplayShape(body_inter, color='YELLOW')
@@ -305,6 +304,8 @@ class Balance_mass:
 
         props = GProp_GProps()
         # self.display.DisplayShape(body_inter, color='YELLOW')
+
+
         brepgprop_VolumeProperties(models, props)
         mass_models = props.Mass()
 
@@ -371,6 +372,24 @@ class Balance_mass:
 
         return all_result
 
+    def inter_with_frame2(self):
+        # print('Start_inter_analyse')
+        all_result = 0
+        props = GProp_GProps()
+        # print(self.modules)
+        for model in self.modules:
+            # print('#')
+            body_inter = BRepAlgoAPI_Common(self.frame, self.modules[model]).Shape()
+            # self.display.DisplayShape(body_inter, color='YELLOW')
+            brepgprop_VolumeProperties(body_inter, props)
+            mass = props.Mass()
+            #print(mass)
+            if mass > 1e-6:
+                # print(mass)
+                all_result += 1
+
+        return all_result
+
     def inter_objects(self):
 
         # print('Start_inter_analyse')
@@ -393,7 +412,45 @@ class Balance_mass:
         # self.start_display()
         return inter_mass
 
-    def centre_mass(self):
+    def centre_mass(self, shape):
+
+        props = GProp_GProps()
+        brepgprop_VolumeProperties(shape, props)
+        # Get inertia properties
+        mass = props.Mass()
+        cog = props.CentreOfMass()
+        matrix_of_inertia = props.MatrixOfInertia()
+        # Display inertia properties
+        # print("Cube mass = %s" % mass)
+        cog_x, cog_y, cog_z = cog.Coord()
+        # print("Center of mass: x = %f;y = %f;z = %f;" % (cog_x, cog_y, cog_z))
+        mat = props.MatrixOfInertia()
+        #######################################################################################
+
+        variation_inertial = abs(mat.Value(2, 3)) + abs(mat.Value(1, 2)) + abs(mat.Value(1, 3)) + abs(
+            mat.Value(2, 1)) + abs(mat.Value(3, 1)) + abs(mat.Value(3, 2))
+
+        var1, var2 = (cog_x ** 2 + cog_y ** 2 + cog_z ** 2) ** 0.5, variation_inertial
+        if var1 < 0.0001 or var2 < 0.0001: var1, var2 = 10 ** 10, 10 ** 10
+        return var1, var2
+
+    def centre_mass_assamble(self):
+
+        flag = 0
+        shape = 0
+        for name in self.modules:
+            if flag == 0:
+                cp = BRepBuilderAPI_Copy(self.modules[name])
+                cp.Perform(self.modules[name])
+                shape = cp.Shape()
+                flag = 1
+            shape = BRepAlgoAPI_Fuse(shape, self.modules[name]).Shape()
+
+        variation, var_inert = self.centre_mass(shape)
+        # self.save_assembly(shape)
+        return variation, var_inert
+
+    def centre_mass2(self):
 
         props = GProp_GProps()
         brepgprop_VolumeProperties(self.m_w_frame, props)
@@ -451,7 +508,8 @@ if __name__ == '__main__':
 
     test = Balance_mass('Assemb.STEP', modules, walls)
     #test.var_test()
-    test.optimithation_evolution()
     test.move_frame()
+    test.optimithation_evolution()
+
     print(test.inter_with_frame())
     test.vizualization_all()
