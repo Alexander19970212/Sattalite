@@ -24,6 +24,7 @@ from OCC.Extend.DataExchange import read_step_file
 import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QInputDialog, QLineEdit, QFileDialog
 from PyQt5.QtGui import QIcon
+display, start_display, add_menu, add_function_to_menu = init_display()
 
 
 class App(QWidget):
@@ -45,7 +46,7 @@ class App(QWidget):
         #self.openFileNamesDialog()
         #self.saveFileDialog()
 
-        self.show()
+        #self.show()
 
     def openFileNameDialog(self):
         options = QFileDialog.Options()
@@ -82,17 +83,27 @@ class Interfac:
         init list of characteristics of the faces
 
         '''
-        self.display, self.start_display, self.add_menu, self.add_function_to_menu = init_display()
-        self.display.SetSelectionModeFace()  # switch to Face selection mode
+        self.modules = {}
+        self.in_disp()
+
+
+    def in_disp(self):
+        #self.display, self.start_display, self.add_menu, self.add_function_to_menu = init_display()
+        # self.display.SetSelectionModeFace()  # switch to Face selection mode
         # self.display.register_select_callback(self.recognize_clicked)
-        self.add_menu('Import')
-        self.add_menu('Choose')
-        self.add_menu('Faces')
-        self.add_menu('Optimization')
-        self.add_menu('Export')
-        self.add_function_to_menu('Import', self.open_frame)
-        self.add_function_to_menu('Import', self.open_models)
-        self.start_display()
+        add_menu('Import')
+        add_menu('Choose')
+        add_menu('Faces')
+        add_menu('Optimization')
+        add_menu('Export')
+        add_menu('Modules')
+        add_function_to_menu('Import', self.open_frame)
+        add_function_to_menu('Import', self.open_models)
+        add_function_to_menu('Modules', self.Print_all)
+        add_function_to_menu('Modules', self.Clear)
+        start_display()
+
+
 
     def recognize_clicked(self, shp, *kwargs):
         """ This is the function called every time
@@ -102,20 +113,25 @@ class Interfac:
             print("Face selected: ", shape)
             # recognize_face(topods_Face(shape))
 
-    def open_frame(self):
+    def open_frame(self, event=None):
         '''
         open step model of the frame
         :return: None
         '''
+
         app = QApplication(sys.argv)
         ex = App()
         filename = ex.openFileNameDialog()
         #sys.exit(app.exec_())
-        print(filename)
+        print(os.path.split(filename)[-1])
 
-        self.frame = read_step_file(os.path.split(filename))
+        self.frame = read_step_file(filename)
+        print('tttt')
         #self.frame = read_step_file(filename)
-        self.display.DisplayShape(self.frame, color='GREEN', transparency=0.9)
+        display.EraseAll()
+        display.Context.RemoveAll(True)
+        display.DisplayShape(self.frame, color='GREEN', transparency=0.9)
+        display.FitAll()
 
     def open_models(self):
         '''
@@ -123,7 +139,23 @@ class Interfac:
         :return:
         '''
 
-        pass
+        app = QApplication(sys.argv)
+        ex = App()
+        filename = ex.openFileNameDialog()
+        # sys.exit(app.exec_())
+        name = os.path.split(filename)[-1]
+        #print(name)
+        self.modules[name] = filename
+        print("ttt")
+        self.in_disp()
+
+
+    def Clear(self):
+        self.modules = {}
+
+    def Print_all(self):
+        print(self.modules)
+
 
 
 if __name__ == '__main__':
