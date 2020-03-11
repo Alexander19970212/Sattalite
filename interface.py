@@ -13,6 +13,7 @@ from __future__ import print_function
 import os
 import os.path
 import sys
+import wx
 
 from OCC.Core.STEPControl import STEPControl_Reader
 from OCC.Core.IFSelect import IFSelect_RetDone, IFSelect_ItemsByEntity
@@ -21,10 +22,13 @@ from OCC.Core.TopoDS import topods_Face
 from OCC.Core.BRepAdaptor import BRepAdaptor_Surface
 from OCC.Display.SimpleGui import init_display
 from OCC.Extend.DataExchange import read_step_file
+from OCC.Core.Bnd import Bnd_Box
+from OCC.Extend.TopologyUtils import TopologyExplorer
 import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QInputDialog, QLineEdit, QFileDialog
 from PyQt5.QtGui import QIcon
-display, start_display, add_menu, add_function_to_menu = init_display()
+from OCC.Core.BRepBndLib import brepbndlib_Add
+display, start_display, add_menu, add_function_to_menu = init_display('wx')
 
 
 class App(QWidget):
@@ -101,17 +105,9 @@ class Interfac:
         add_function_to_menu('Import', self.open_models)
         add_function_to_menu('Modules', self.Print_all)
         add_function_to_menu('Modules', self.Clear)
+        add_function_to_menu('Faces', self.select_faces)
         start_display()
-
-
-
-    def recognize_clicked(self, shp, *kwargs):
-        """ This is the function called every time
-        a face is clicked in the 3d view
-        """
-        for shape in shp:  # this should be a TopoDS_Face TODO check it is
-            print("Face selected: ", shape)
-            # recognize_face(topods_Face(shape))
+        
 
     def open_frame(self, event=None):
         '''
@@ -126,14 +122,14 @@ class Interfac:
         print(os.path.split(filename)[-1])
 
         self.frame = read_step_file(filename)
-        print('tttt')
+
         #self.frame = read_step_file(filename)
         display.EraseAll()
         display.Context.RemoveAll(True)
         display.DisplayShape(self.frame, color='GREEN', transparency=0.9)
         display.FitAll()
 
-    def open_models(self):
+    def open_models(self, event=None):
         '''
         open steps model of the modules
         :return:
@@ -146,15 +142,76 @@ class Interfac:
         name = os.path.split(filename)[-1]
         #print(name)
         self.modules[name] = filename
-        print("ttt")
-        self.in_disp()
+
+        #self.in_disp()
 
 
-    def Clear(self):
+    def Clear(self, event=None):
         self.modules = {}
 
-    def Print_all(self):
+    def Print_all(self, event=None):
         print(self.modules)
+
+    def recognize_clicked(self, shp, *kwargs):
+        """ This is the function called every time
+        a face is clicked in the 3d view
+        """
+
+        '''t = TopologyExplorer(self.frame)
+        for shape in t.faces():  # this should be a TopoDS_Face TODO check it is
+            print("Face selected: ", shape)
+            self.recognize_face(topods_Face(shape))'''
+
+
+        for shape in shp:  # this should be a TopoDS_Face TODO check it is
+            print("Face selected: ", shape)
+            bbox = Bnd_Box()
+            brepbndlib_Add( shape, bbox)
+            xmin, ymin, zmin, xmax, ymax, zmax = bbox.Get()
+            print('--> Bounds', xmax-xmin, ymax-ymin, zmax-zmin)
+            self.recognize_face(topods_Face(shape))
+
+    def recognize_face(self, a_face):
+        """ Takes a TopoDS shape and tries to identify its nature
+        whether it is a plane a cylinder a torus etc.
+        if a plane, returns the normal
+        if a cylinder, returns the radius
+        """
+        surf = BRepAdaptor_Surface(a_face, True)
+        surf_type = surf.GetType()
+        if surf_type == GeomAbs_Plane:
+            print("--> plane")
+            # look for the properties of the plane
+            # first get the related gp_Pln
+            gp_pln = surf.Plane()
+            location = gp_pln.Location()  # a point of the plane
+            normal = gp_pln.Axis().Direction()  # the plane normal
+            x_axis = gp_pln.XAxis().Direction()
+            # then export location and normal to the console output
+            print("--> Location (global coordinates)", location.X(), location.Y(), location.Z())
+            print("--> Normal (global coordinates)", normal.X(), normal.Y(), normal.Z())
+            print("--> X_axis", x_axis.X(), x_axis.Y(), x_axis.Z())
+
+        elif surf_type == GeomAbs_Cylinder:
+            print("--> cylinder")
+            # look for the properties of the cylinder
+            # first get the related gp_Cyl
+            gp_cyl = surf.Cylinder()
+            location = gp_cyl.Location()  # a point of the axis
+            axis = gp_cyl.Axis().Direction()  # the cylinder axis
+            # then export location and normal to the console output
+            print("--> Location (global coordinates)", location.X(), location.Y(), location.Z())
+            print("--> Axis (global coordinates)", axis.X(), axis.Y(), axis.Z())
+        else:
+            # TODO there are plenty other type that can be checked
+            # see documentation for the BRepAdaptor class
+            # https://www.opencascade.com/doc/occt-6.9.1/refman/html/class_b_rep_adaptor___surface.html
+            print("not implemented")
+
+    def select_faces(self, event=None):
+        display.SetSelectionModeFace()  # switch to Face selection mode
+        display.register_select_callback(self.recognize_clicked)
+
 
 
 
