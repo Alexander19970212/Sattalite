@@ -73,8 +73,9 @@ class Balance_mass:
         self.reserv_models = {}
         # self.display, self.start_display, self.add_menu, self.add_function_to_menu = init_display()
         for model in modules:
-            self.reserv_models[model[2]] = read_step_file(os.path.join(model[0], model[1], model[2]))
-            self.names_models.append(model[2])
+            #self.reserv_models[model[2]] = read_step_file(os.path.join(model[0], model[1], model[2]))
+            self.reserv_models[model] = read_step_file(modules[model])
+            self.names_models.append(model)
 
         self.walls = walls
 
@@ -123,6 +124,7 @@ class Balance_mass:
         v_x = gp_Vec(P0, gp_Pnt(0, 1, 0))
         v_r = gp_Vec(P0, gp_Pnt(x, y, z))
         trsf = gp_Trsf()
+        print(v_r.Angle(v_x))
         trsf.SetRotation(gp_Ax1(P0, gp_Dir(0, 0, 1)), v_r.Angle(v_x))
         shape.Move(TopLoc_Location(trsf))
 
@@ -190,7 +192,7 @@ class Balance_mass:
         for name in self.reserv_models:
             for i in range(4):
                 bounds.append((-1, 1))
-        result = differential_evolution(self.goal_function2, bounds=bounds, maxiter=150, disp=True,
+        result = differential_evolution(self.goal_function2, bounds=bounds, maxiter=2, disp=True,
                                         popsize=10, workers=7)  # , x0)
 
         print(result.x, result.fun)
@@ -256,8 +258,9 @@ class Balance_mass:
     def vizualization_all(self):
         # print(self.modules)
         self.display, self.start_display, self.add_menu, self.add_function_to_menu = init_display()
-        frame1 = read_step_file(os.path.join('part_of_sattelate', 'karkase', self.name_frame))
+        frame1 = read_step_file(self.name_frame)
         self.display.DisplayShape(frame1, color='GREEN', transparency=0.9)
+        print(len(self.modules))
         for model in self.modules:
             self.display.DisplayShape(self.modules[model], color='RED', transparency=0.9)
 
@@ -266,7 +269,8 @@ class Balance_mass:
     def move_frame(self):
         from OCC.Core.BOPAlgo import BOPAlgo_Builder
         from OCC.Extend.DataExchange import read_step_file_with_names_colors
-        self.frame = read_step_file(os.path.join('part_of_sattelate', 'karkase', self.name_frame))
+        #self.frame = read_step_file(os.path.join('part_of_sattelate', 'karkase', self.name_frame))
+        self.frame = read_step_file(self.name_frame)
         '''frame = read_step_file_with_names_colors('part_of_sattelate/karkase/Assemb.STEP')
 
         #shapes = list(Topo(frame).myShape())
@@ -471,6 +475,29 @@ class Balance_mass:
         var1, var2 = (cog_x ** 2 + cog_y ** 2 + cog_z ** 2) ** 0.5, variation_inertial
         if var1 < 0.0001 or var2 < 0.0001: var1, var2 = 10 ** 10, 10 ** 10
         return var1, var2
+
+    def random_location(self):
+        from OCC.Core.BOPAlgo import BOPAlgo_Builder
+        import random
+        x = []
+        for name in self.reserv_models:
+            for i in range(4):
+                x.append(random.uniform(-1, 1))
+        print(self.goal_function2(x))
+
+
+        '''print('Input')
+        builder = BOPAlgo_Builder()
+        builder.AddArgument(self.frame)
+
+        for name in self.modules:
+            builder.AddArgument(self.modules[name])
+
+        builder.SetRunParallel(True)
+        builder.Perform()
+        shape = builder.Shape()
+        return shape'''
+
 
     def var_test(self):
 
