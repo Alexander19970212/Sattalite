@@ -1,7 +1,8 @@
-import os
+from multiprocessing import Pool
 
-path = os.path.join('part_of_sattelate', 'karkase', 'Assemb.STEP')
-print(path)
+def f(x):
+    return x*x
 
-path_2 = os.path.split(path)
-print(path_2)
+if __name__ == '__main__':
+    with Pool(5) as p:
+        print(p.map(f, [1, 2, 3]))
