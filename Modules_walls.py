@@ -59,7 +59,7 @@ import math
 class Balance_mass:
     def __init__(self, frame, modules, walls):
 
-        #self.display, self.start_display, self.add_menu, self.add_function_to_menu = init_display()
+        # self.display, self.start_display, self.add_menu, self.add_function_to_menu = init_display()
         self.name_frame = frame
         self.modules = {}
         self.names_models = []
@@ -73,7 +73,7 @@ class Balance_mass:
         self.reserv_models = {}
         # self.display, self.start_display, self.add_menu, self.add_function_to_menu = init_display()
         for model in modules:
-            #self.reserv_models[model[2]] = read_step_file(os.path.join(model[0], model[1], model[2]))
+            # self.reserv_models[model[2]] = read_step_file(os.path.join(model[0], model[1], model[2]))
             self.reserv_models[model] = read_step_file(modules[model])
             self.names_models.append(model)
 
@@ -84,6 +84,7 @@ class Balance_mass:
                                   [wall[6], wall[7]]]'''
 
     def rot_point(self, x, y, angle):
+        import math
 
         x1, y1 = -x / 2, y / 2
         x2, y2 = x / 2, y / 2
@@ -99,6 +100,13 @@ class Balance_mass:
         return max(abs(x1_n), abs(x2_n)), max(abs(y1_n), abs(y2_n))
 
     def Locate_centre_face(self, number, name_body, angle, x_drive, y_drive):
+        from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeFace, BRepBuilderAPI_MakeWire, BRepBuilderAPI_MakeEdge, \
+            BRepBuilderAPI_Copy
+        from OCC.Core.Bnd import Bnd_Box
+        from OCC.Core.BRepBndLib import brepbndlib_Add
+        from OCC.Core.gp import gp_Pnt, gp_Trsf, gp_Vec, gp_Pln, gp_Dir, gp_Ax3, gp_Ax1
+        from OCC.Core.TopLoc import TopLoc_Location
+
         cp = BRepBuilderAPI_Copy(self.reserv_models[name_body])
         cp.Perform(self.reserv_models[name_body])
         shape = cp.Shape()
@@ -176,7 +184,7 @@ class Balance_mass:
         trsf.SetTranslation(gp_Vec(self.walls[number][2][0] * move_x, self.walls[number][2][1] * move_x,
                                    self.walls[number][2][2] * move_x))
         shape.Move(TopLoc_Location(trsf))
-        #print(name_body, shape)
+        # print(name_body, shape)
 
         self.modules[name_body] = shape
 
@@ -187,7 +195,6 @@ class Balance_mass:
         print('Start optimithtion')
 
         bounds = []
-
 
         for name in self.reserv_models:
             for i in range(4):
@@ -203,6 +210,56 @@ class Balance_mass:
 
         self.save_all_assamle()
 
+    def optimithation_evolution2(self):
+        import matplotlib.pyplot as plt
+        from stochsearch import EvolSearch
+        from OCC.Core.Bnd import Bnd_Box
+        evol_params = {
+            'num_processes': 7,  # (optional) number of proccesses for multiprocessing.Pool
+            'pop_size': 100,  # population size
+            'genotype_size': 16,  # dimensionality of solution
+            'fitness_function': self.goal_function2,  # custom function defined to evaluate fitness of a solution
+            'elitist_fraction': 0.04,  # fraction of population retained as is between generations
+            'mutation_variance': 0.2  # mutation noise added to offspring.
+        }
+
+        # create evolutionary search object
+        es = EvolSearch(evol_params)
+
+        '''OPTION 1
+        # execute the search for 100 generations
+        num_gens = 100
+        es.execute_search(num_gens)
+        '''
+
+        '''OPTION 2'''
+        # keep searching till a stopping condition is reached
+        best_fit = []
+        mean_fit = []
+        num_gen = 0
+        max_num_gens = 100
+        desired_fitness = 0.1
+        while es.get_best_individual_fitness() < desired_fitness and num_gen < max_num_gens:
+            # while num_gen < max_num_gens:
+            print('Gen #' + str(num_gen) + ' Best Fitness = ' + str(es.get_best_individual_fitness()))
+            es.step_generation()
+            best_fit.append(es.get_best_individual_fitness())
+            mean_fit.append(es.get_mean_fitness())
+            num_gen += 1
+
+        # print results
+        print('Max fitness of population = ', es.get_best_individual_fitness())
+        print('Best individual in population = ', es.get_best_individual())
+
+        # plot results
+        plt.figure()
+        plt.plot(best_fit)
+        plt.plot(mean_fit)
+        plt.xlabel('Generations')
+        plt.ylabel('Fitness')
+        plt.legend(['best fitness', 'avg. fitness'])
+        plt.show()
+
     def save_all_assamle(self):
         from OCC.Core.BOPAlgo import BOPAlgo_Builder
         print(self.modules.keys())
@@ -217,6 +274,9 @@ class Balance_mass:
         self.save_assembly(shape)
 
     def goal_function2(self, args):
+        import math
+        from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeFace, BRepBuilderAPI_MakeWire, BRepBuilderAPI_MakeEdge, \
+            BRepBuilderAPI_Copy
 
         m = len(self.names_models)
 
@@ -235,9 +295,10 @@ class Balance_mass:
                 self.progress.append(res)
 
             else:
-                res = 1
+                res = 0.99
         else:
-            res = 1
+            res = 0.99
+        if res >= 1: res = 0.99
         return res
 
     def save_assembly(self, shape):
@@ -269,7 +330,7 @@ class Balance_mass:
     def move_frame(self):
         from OCC.Core.BOPAlgo import BOPAlgo_Builder
         from OCC.Extend.DataExchange import read_step_file_with_names_colors
-        #self.frame = read_step_file(os.path.join('part_of_sattelate', 'karkase', self.name_frame))
+        # self.frame = read_step_file(os.path.join('part_of_sattelate', 'karkase', self.name_frame))
         self.frame = read_step_file(self.name_frame)
         '''frame = read_step_file_with_names_colors('part_of_sattelate/karkase/Assemb.STEP')
 
@@ -285,8 +346,12 @@ class Balance_mass:
         self.frame = builder.Shape()'''
 
     def inter_with_frame(self):
+        from OCC.Core.GProp import GProp_GProps
+        from OCC.Core.BRepGProp import brepgprop_VolumeProperties, brepgprop_SurfaceProperties, \
+            brepgprop_LinearProperties
         # print('Start_inter_analyse')
-        #print(self.names_models)
+        # print(self.names_models)
+
         all_result = 0
         props = GProp_GProps()
         # self.display.DisplayShape(body_inter, color='YELLOW')
@@ -308,7 +373,6 @@ class Balance_mass:
 
         props = GProp_GProps()
         # self.display.DisplayShape(body_inter, color='YELLOW')
-
 
         brepgprop_VolumeProperties(models, props)
         mass_models = props.Mass()
@@ -377,6 +441,10 @@ class Balance_mass:
         return all_result
 
     def inter_with_frame2(self):
+        from OCC.Core.GProp import GProp_GProps
+        from OCC.Core.BRepAlgoAPI import BRepAlgoAPI_Fuse, BRepAlgoAPI_Common, BRepAlgoAPI_Section, BRepAlgoAPI_Cut
+        from OCC.Core.BRepGProp import brepgprop_VolumeProperties, brepgprop_SurfaceProperties, \
+            brepgprop_LinearProperties
         # print('Start_inter_analyse')
         all_result = 0
         props = GProp_GProps()
@@ -387,7 +455,7 @@ class Balance_mass:
             # self.display.DisplayShape(body_inter, color='YELLOW')
             brepgprop_VolumeProperties(body_inter, props)
             mass = props.Mass()
-            #print(mass)
+            # print(mass)
             if mass > 1e-6:
                 # print(mass)
                 all_result += 1
@@ -395,6 +463,10 @@ class Balance_mass:
         return all_result
 
     def inter_objects(self):
+        from OCC.Core.GProp import GProp_GProps
+        from OCC.Core.BRepGProp import brepgprop_VolumeProperties, brepgprop_SurfaceProperties, \
+            brepgprop_LinearProperties
+        from OCC.Core.BRepAlgoAPI import BRepAlgoAPI_Fuse, BRepAlgoAPI_Common, BRepAlgoAPI_Section, BRepAlgoAPI_Cut
 
         # print('Start_inter_analyse')
         inter_mass = 0
@@ -417,6 +489,7 @@ class Balance_mass:
         return inter_mass
 
     def centre_mass(self, shape):
+        from OCC.Core.GProp import GProp_GProps
 
         props = GProp_GProps()
         brepgprop_VolumeProperties(shape, props)
@@ -485,7 +558,6 @@ class Balance_mass:
                 x.append(random.uniform(-1, 1))
         print(self.goal_function2(x))
 
-
         '''print('Input')
         builder = BOPAlgo_Builder()
         builder.AddArgument(self.frame)
@@ -498,7 +570,6 @@ class Balance_mass:
         shape = builder.Shape()
         return shape'''
 
-
     def var_test(self):
 
         # print(self.reserv_models)
@@ -508,8 +579,8 @@ class Balance_mass:
 
 
 if __name__ == '__main__':
-    frame = ['part_of_sattelate', 'karkase', 'Assemb.STEP']
-    modules = [  # ['part_of_sattelate', 'pribore', 'Camara2_WS16.STEP'],
+    # frame = ['part_of_sattelate', 'karkase', 'Assemb.STEP']
+    '''modules = [  # ['part_of_sattelate', 'pribore', 'Camara2_WS16.STEP'],
         ['part_of_sattelate', 'pribore', 'DAV_WS16.STEP'],
         # ['part_of_sattelate', 'pribore', 'All_SEP_WS16.STEP'],
         # ['part_of_sattelate', 'pribore', 'Magnitometr.STEP'],
@@ -518,11 +589,17 @@ if __name__ == '__main__':
         # ['part_of_sattelate', 'pribore', 'Solar_battery_WS16.STEP'],
         ['part_of_sattelate', 'pribore', 'UKV.STEP'],
         # ['part_of_sattelate', 'pribore', 'DAV2_WS16.STEP'],
-        ['part_of_sattelate', 'pribore', 'Vch_translator_WS16.STEP']]
+        ['part_of_sattelate', 'pribore', 'Vch_translator_WS16.STEP']]'''
     '''walls = [[110, 0, 10, 0, -10, 0, 0, 186, 248],
              [110, 0, 10, 0, 0, 0, 10, 186, 248],
              [110, 0, 10, 0, 10, 0, 0, 186, 248],
              [110, 0, 10, 0, 0, 0, -10, 186, 248], ]'''
+    modules = {'DAV_WS16.STEP': 'C:/Users/Alexander/PycharmProjects/Sattalite/part_of_sattelate/pribore/DAV_WS16.STEP',
+               'DAV2_WS16.STEP': 'C:/Users/Alexander/PycharmProjects/Sattalite/part_of_sattelate/pribore/DAV2_WS16.STEP',
+               'DAV3_WS16.STEP': 'C:/Users/Alexander/PycharmProjects/Sattalite/part_of_sattelate/pribore/DAV3_WS16.STEP',
+               'Magnitometr.STEP': 'C:/Users/Alexander/PycharmProjects/Sattalite/part_of_sattelate/pribore/Magnitometr.STEP'}
+
+    # frame = 'C:\Users\Alexander\PycharmProjects\Sattalite\part_of_sattelate\karkase\Assemb.STEP'
 
     walls = [[[0, 110, 0], [0, 1, 0], [1, 0, 0], [186, 248]],
              [[110, 0, 0], [1, 0, 0], [0, -1, 0], [186, 248]],
@@ -533,10 +610,10 @@ if __name__ == '__main__':
     # distant between xero point and face plt, normal of wall
     # distant between zero point anf face plt, vector that will drop axis z, vector сонаправленный X
 
-    test = Balance_mass('Assemb.STEP', modules, walls)
-    #test.var_test()
+    test = Balance_mass(r'C:\Users\Alexander\PycharmProjects\Sattalite\part_of_sattelate\karkase\Assemb.STEP', modules, walls)
+    # test.var_test()
     test.move_frame()
-    test.optimithation_evolution()
+    test.optimithation_evolution2()
 
     print(test.inter_with_frame())
     test.vizualization_all()

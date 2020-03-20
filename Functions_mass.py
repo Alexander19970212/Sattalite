@@ -650,6 +650,57 @@ class Balance_mass:
 
         self.save_all_assamle()
 
+    def optimithation_evolution2(self):
+        import matplotlib.pyplot as plt
+        from stochsearch import EvolSearch
+        evol_params = {
+            'num_processes': 4,  # (optional) number of proccesses for multiprocessing.Pool
+            'pop_size': 100,  # population size
+            'genotype_size': 50,  # dimensionality of solution
+            'fitness_function': self.goal_function2,  # custom function defined to evaluate fitness of a solution
+            'elitist_fraction': 0.04,  # fraction of population retained as is between generations
+            'mutation_variance': 0.2  # mutation noise added to offspring.
+        }
+
+        # create evolutionary search object
+        es = EvolSearch(evol_params)
+
+        '''OPTION 1
+        # execute the search for 100 generations
+        num_gens = 100
+        es.execute_search(num_gens)
+        '''
+
+        '''OPTION 2'''
+        # keep searching till a stopping condition is reached
+        best_fit = []
+        mean_fit = []
+        num_gen = 0
+        max_num_gens = 100
+        desired_fitness = 0.0
+        while es.get_best_individual_fitness() < desired_fitness and num_gen < max_num_gens:
+        #while num_gen < max_num_gens:
+            print('Gen #' + str(num_gen) + ' Best Fitness = ' + str(es.get_best_individual_fitness()))
+            es.step_generation()
+            best_fit.append(es.get_best_individual_fitness())
+            mean_fit.append(es.get_mean_fitness())
+            num_gen += 1
+
+        # print results
+        print('Max fitness of population = ', es.get_best_individual_fitness())
+        print('Best individual in population = ', es.get_best_individual())
+
+        # plot results
+        plt.figure()
+        plt.plot(best_fit)
+        plt.plot(mean_fit)
+        plt.xlabel('Generations')
+        plt.ylabel('Fitness')
+        plt.legend(['best fitness', 'avg. fitness'])
+        plt.show()
+
+
+
     def entering_result(self, args):
 
         for i, name in enumerate(self.history_args):
@@ -827,7 +878,7 @@ class Balance_mass:
 
 if __name__ == '__main__':
     frame = ['part_of_sattelate', 'karkase', 'Assemb.STEP']
-    modules = [  # ['part_of_sattelate', 'pribore', 'Camara2_WS16.STEP'],
+    '''modules = [  # ['part_of_sattelate', 'pribore', 'Camara2_WS16.STEP'],
         ['part_of_sattelate', 'pribore', 'DAV_WS16.STEP'],
         ['part_of_sattelate', 'pribore', 'DAV2_WS16.STEP'],
         ['part_of_sattelate', 'pribore', 'DAV3_WS16.STEP'],
@@ -841,15 +892,19 @@ if __name__ == '__main__':
         # ['part_of_sattelate', 'pribore', 'Solar_battery_WS16.STEP'],
         ['part_of_sattelate', 'pribore', 'UKV.STEP'],
         # ['part_of_sattelate', 'pribore', 'DAV_WS16.STEP'],
-        ['part_of_sattelate', 'pribore', 'Vch_translator_WS16.STEP']]
+        ['part_of_sattelate', 'pribore', 'Vch_translator_WS16.STEP']]'''
 
-    test = Balance_mass('Assemb.STEP', modules)
-    test.move_frame()
-    test.body_random2()
+    '''modules = ["C:\Users\Alexander\PycharmProjects\Sattalite\part_of_sattelate\pribore\DAV_WS16.STEP",
+               "C:\Users\Alexander\PycharmProjects\Sattalite\part_of_sattelate\pribore\DAV2_WS16.STEP",
+               "C:\Users\Alexander\PycharmProjects\Sattalite\part_of_sattelate\pribore\DAV3_WS16.STEP"]
+
+    test = Balance_mass("C:\Users\Alexander\PycharmProjects\Sattalite\part_of_sattelate\karkase\Assemb.STEP", modules)'''
+    #test.move_frame()
+    #test.body_random2()
     # test.centre_mass_assamble()
     # test.optimithation2()
     ###########################################
-    test.optimithation_evolution()
+    #test.optimithation_evolution2()
     ###########################################
     # args = [2.64585885, 3.43770613, -12.86516986, 10.30736343, 2.23339371, 12.30923883, -1.55528775, 146.94101023]
     # args = [2.64585885, 3.43770613, -13.86516986, 10.30736343, 2.23339371, 13.30923883, -1.55528775, 146.94101023]
@@ -864,5 +919,5 @@ if __name__ == '__main__':
     # test.peeping_all_frame()
     # test.inter_objects()
     # test.remove_inter_frame()
-    test.vizualization_all()
+    #test.vizualization_all()
     #test.move_frame()

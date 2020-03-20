@@ -121,7 +121,7 @@ Genetic algorithm parameters:
     Mating pool size
     Population size
 """
-sol_per_pop = 10
+sol_per_pop = 8
 num_parents_mating = 4
 num_generations = 1000
 
