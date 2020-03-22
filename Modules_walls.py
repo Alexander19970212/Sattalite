@@ -40,13 +40,13 @@ from OCC.Extend.ShapeFactory import make_wire
 import random
 # import matplotlib.pyplot as plt
 from OCC.Display.SimpleGui import init_display
-from scipy.spatial.transform import Rotation as R
+#from scipy.spatial.transform import Rotation as R
 from OCC.Core.TopAbs import TopAbs_EDGE, TopAbs_FACE
 from OCC.Core.TopoDS import topods_Face, topods_Edge
 from OCC.Core.TopExp import TopExp_Explorer
 from OCC.Extend.DataExchange import read_step_file_with_names_colors
 from OCC.Core.Quantity import Quantity_Color, Quantity_TOC_RGB
-from scipy.optimize import minimize
+#from scipy.optimize import minimize
 from collections import defaultdict
 from OCC.Core.GC import GC_MakePlane
 from OCC.Core.BOPAlgo import BOPAlgo_COMMON
@@ -121,8 +121,14 @@ class Balance_mass:
         shape.Move(TopLoc_Location(trsf))
 
         # Process vector of rotation to face
-        x = -self.walls[number][1][1]
-        y = self.walls[number][1][0]
+        x, y = 1, 1
+        try:
+            x = -self.walls[number][1][1]
+            y = self.walls[number][1][0]
+        except:
+            print("ERRORRR:")
+            print(self.walls)
+            print(number)
         z = 0
         P0 = gp_Pnt(0, 0, 0)
         P1 = gp_Pnt(0, 0, 1)
@@ -132,7 +138,7 @@ class Balance_mass:
         v_x = gp_Vec(P0, gp_Pnt(0, 1, 0))
         v_r = gp_Vec(P0, gp_Pnt(x, y, z))
         trsf = gp_Trsf()
-        print(v_r.Angle(v_x))
+        #print(v_r.Angle(v_x))
         trsf.SetRotation(gp_Ax1(P0, gp_Dir(0, 0, 1)), v_r.Angle(v_x))
         shape.Move(TopLoc_Location(trsf))
 
@@ -190,7 +196,7 @@ class Balance_mass:
 
     # def rotate_by_centre(self, shape, number, angle, P0, P2):
 
-    def optimithation_evolution(self):
+    '''def optimithation_evolution(self):
         from scipy.optimize import differential_evolution
         print('Start optimithtion')
 
@@ -208,15 +214,15 @@ class Balance_mass:
             for s in self.progress:
                 f.write(str(s) + '\n')
 
-        self.save_all_assamle()
+        self.save_all_assamle()'''
 
     def optimithation_evolution2(self):
         import matplotlib.pyplot as plt
         from stochsearch import EvolSearch
         from OCC.Core.Bnd import Bnd_Box
         evol_params = {
-            'num_processes': 7,  # (optional) number of proccesses for multiprocessing.Pool
-            'pop_size': 100,  # population size
+            'num_processes': 3,  # (optional) number of proccesses for multiprocessing.Pool
+            'pop_size': 40,  # population size
             'genotype_size': 16,  # dimensionality of solution
             'fitness_function': self.goal_function2,  # custom function defined to evaluate fitness of a solution
             'elitist_fraction': 0.04,  # fraction of population retained as is between generations
@@ -238,13 +244,15 @@ class Balance_mass:
         mean_fit = []
         num_gen = 0
         max_num_gens = 100
-        desired_fitness = 0.1
-        while es.get_best_individual_fitness() < desired_fitness and num_gen < max_num_gens:
-            # while num_gen < max_num_gens:
+        desired_fitness = 0.01
+        best_fitn = 1
+        while best_fitn > desired_fitness and num_gen < max_num_gens:
+        #while num_gen < max_num_gens:
             print('Gen #' + str(num_gen) + ' Best Fitness = ' + str(es.get_best_individual_fitness()))
             es.step_generation()
             best_fit.append(es.get_best_individual_fitness())
             mean_fit.append(es.get_mean_fitness())
+            best_fitn = es.get_best_individual_fitness()
             num_gen += 1
 
         # print results
@@ -281,7 +289,7 @@ class Balance_mass:
         m = len(self.names_models)
 
         for i, name in enumerate(self.reserv_models):
-            self.Locate_centre_face(int(m * (args[i * 4] + 1) / 2), name, math.radians(int(args[i * 4 + 1] + 1) * 2),
+            self.Locate_centre_face(int(m * (args[i * 4] + 1) / 2)-1, name, math.radians(int(args[i * 4 + 1] + 1) * 2),
                                     int(args[i * 4 + 2]), int(args[i * 4 + 3]))
 
         intr1 = self.inter_with_frame2()
@@ -347,8 +355,12 @@ class Balance_mass:
 
     def inter_with_frame(self):
         from OCC.Core.GProp import GProp_GProps
+        from OCC.Core.BOPAlgo import BOPAlgo_Builder
         from OCC.Core.BRepGProp import brepgprop_VolumeProperties, brepgprop_SurfaceProperties, \
             brepgprop_LinearProperties
+        from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeFace, BRepBuilderAPI_MakeWire, BRepBuilderAPI_MakeEdge, \
+            BRepBuilderAPI_Copy
+        from OCC.Core.BRepAlgoAPI import BRepAlgoAPI_Fuse, BRepAlgoAPI_Common, BRepAlgoAPI_Section, BRepAlgoAPI_Cut
         # print('Start_inter_analyse')
         # print(self.names_models)
 
@@ -490,6 +502,8 @@ class Balance_mass:
 
     def centre_mass(self, shape):
         from OCC.Core.GProp import GProp_GProps
+        from OCC.Core.BRepGProp import brepgprop_VolumeProperties, brepgprop_SurfaceProperties, \
+            brepgprop_LinearProperties
 
         props = GProp_GProps()
         brepgprop_VolumeProperties(shape, props)
@@ -512,6 +526,9 @@ class Balance_mass:
         return var1, var2
 
     def centre_mass_assamble(self):
+        from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeFace, BRepBuilderAPI_MakeWire, BRepBuilderAPI_MakeEdge, \
+            BRepBuilderAPI_Copy
+        from OCC.Core.BRepAlgoAPI import BRepAlgoAPI_Fuse, BRepAlgoAPI_Common, BRepAlgoAPI_Section, BRepAlgoAPI_Cut
 
         flag = 0
         shape = 0
@@ -528,6 +545,9 @@ class Balance_mass:
         return variation, var_inert
 
     def centre_mass2(self):
+        from OCC.Core.GProp import GProp_GProps
+        from OCC.Core.BRepGProp import brepgprop_VolumeProperties, brepgprop_SurfaceProperties, \
+            brepgprop_LinearProperties
 
         props = GProp_GProps()
         brepgprop_VolumeProperties(self.m_w_frame, props)

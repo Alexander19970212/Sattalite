@@ -106,7 +106,7 @@ class EvolSearch:
         self.pop = self.pop[:self.pop_size,:]
 
         # clipping to genotype range
-        self.pop = np.clip(self.pop,0,1)
+        self.pop = np.clip(self.pop,-1,1)
 
     def step_generation(self):
         '''
@@ -153,6 +153,7 @@ class EvolSearch:
         '''
         return the fitness value of the best individual
         '''
+        print('Fitness: ', self.fitness)
         return np.min(self.fitness)
 
     def get_mean_fitness(self):
