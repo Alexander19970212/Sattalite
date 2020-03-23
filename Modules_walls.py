@@ -166,8 +166,8 @@ class Balance_mass:
         limit_x = self.walls[number][3][0] / 2 - offset_x
         limit_y = self.walls[number][3][1] / 2 - offset_y
 
-        move_x = limit_x * x_drive
-        move_y = limit_y * y_drive
+        move_x = int(limit_x * x_drive)
+        move_y = int(limit_y * y_drive)
 
         # Move to x and y
         x_axy = self.walls[number][1][1] * self.walls[number][2][2] - self.walls[number][1][2] * self.walls[number][2][
@@ -220,13 +220,21 @@ class Balance_mass:
         import matplotlib.pyplot as plt
         from stochsearch import EvolSearch
         from OCC.Core.Bnd import Bnd_Box
+        bounds = []
+        for name in self.reserv_models:
+            bounds.append([0, len(self.walls)])
+            bounds.append([0, 4])
+            bounds.append([-1, 1])
+            bounds.append([-1, 1])
+
         evol_params = {
             'num_processes': 3,  # (optional) number of proccesses for multiprocessing.Pool
             'pop_size': 40,  # population size
-            'genotype_size': 16,  # dimensionality of solution
+            'bounds': bounds,
+            'genotype_size': len(bounds),  # dimensionality of solution
             'fitness_function': self.goal_function2,  # custom function defined to evaluate fitness of a solution
             'elitist_fraction': 0.04,  # fraction of population retained as is between generations
-            'mutation_variance': 0.2  # mutation noise added to offspring.
+            'mutation_variance': 0.1  # mutation noise added to offspring.
         }
 
         # create evolutionary search object
@@ -243,8 +251,8 @@ class Balance_mass:
         best_fit = []
         mean_fit = []
         num_gen = 0
-        max_num_gens = 100
-        desired_fitness = 0.01
+        max_num_gens = 5
+        desired_fitness = 0.2
         best_fitn = 1
         while best_fitn > desired_fitness and num_gen < max_num_gens:
         #while num_gen < max_num_gens:
@@ -256,7 +264,7 @@ class Balance_mass:
             num_gen += 1
 
         # print results
-        print('Max fitness of population = ', es.get_best_individual_fitness())
+        print('Min fitness of population = ', es.get_best_individual_fitness())
         print('Best individual in population = ', es.get_best_individual())
 
         # plot results
@@ -289,8 +297,12 @@ class Balance_mass:
         m = len(self.names_models)
 
         for i, name in enumerate(self.reserv_models):
-            self.Locate_centre_face(int(m * (args[i * 4] + 1) / 2)-1, name, math.radians(int(args[i * 4 + 1] + 1) * 2),
-                                    int(args[i * 4 + 2]), int(args[i * 4 + 3]))
+            # self.Locate_centre_face(int(m * (args[i * 4] + 1) / 2)-1, name, math.radians(int(args[i * 4 + 1] + 1) * 2),
+            #                         int(args[i * 4 + 2]), int(args[i * 4 + 3]))
+
+            self.Locate_centre_face(int(args[i * 4]), name,
+                                    math.radians(int(args[i * 4 + 1]) * 90),
+                                    args[i * 4 + 2], args[i * 4 + 3])
 
         intr1 = self.inter_with_frame2()
         if intr1 == 0:
