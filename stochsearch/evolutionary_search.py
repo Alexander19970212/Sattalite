@@ -72,7 +72,7 @@ class EvolSearch:
 
         self.pop = np.array(self.pop)
         # self.pop = np.random.rand(self.pop_size,self.genotype_size)
-        print(self.pop)
+        #print(self.pop)
         self.fitness = np.zeros(self.pop_size)
         self.num_batches = int(self.pop_size / self.num_processes)
         self.num_remainder = int(self.pop_size % self.num_processes)
@@ -107,7 +107,7 @@ class EvolSearch:
         '''
         from fitness select top performing individuals based on elitist_fraction
         '''
-        self.pop = self.pop[np.argsort(self.fitness)[-self.elitist_fraction:], :]
+        self.pop = self.pop[np.argsort(-self.fitness)[-self.elitist_fraction:], :]
 
     def mutation(self):
         '''
@@ -117,8 +117,9 @@ class EvolSearch:
         num_reps = int((self.pop_size - self.elitist_fraction) / self.elitist_fraction) + 1
 
         # creating copies and adding noise
+        print('POP : ', self.pop)
         mutated_elites = np.tile(self.pop, [num_reps, 1])
-        #print('mutated_elites: ', mutated_elites)
+        print('mutated_elites: ', mutated_elites)
 
         rand_pop = []
         for one_pop in range(self.pop_size):
@@ -133,16 +134,16 @@ class EvolSearch:
         rand_pop = np.array(rand_pop)
         mutated_elites_s = np.random.choice(2, size=[num_reps * self.elitist_fraction, self.genotype_size],
                                             p=[1 - self.mutation_variance, self.mutation_variance])
-        print('mutated_elites_s: ', mutated_elites_s)
+        #print('mutated_elites_s: ', mutated_elites_s)
 
         # mutated_elites_s = np.random.normal(loc=0.,scale=self.mutation_variance,
         #                                         size=[num_reps*self.elitist_fraction,self.genotype_size])
         # mutated_elites_s = int(mutated_elites_s > 0)
 
         #print(mutated_elites_s)
-        print('mutated_elites: ', mutated_elites)
+        #print('mutated_elites: ', mutated_elites)
         mutated_elites_n = np.array(mutated_elites_s<1).astype(int)*mutated_elites
-        print('mutated_elites_n: ', mutated_elites_n)
+        #print('mutated_elites_n: ', mutated_elites_n)
 
         mutated_elites = mutated_elites_s*rand_pop + mutated_elites_n
 
