@@ -108,18 +108,21 @@ class EvolSearch:
         from fitness select top performing individuals based on elitist_fraction
         '''
         self.pop = self.pop[np.argsort(-self.fitness)[-self.elitist_fraction:], :]
+        self.best_parents = np.copy(self.pop)
+
+        print('Selected best result: ', self.fitness[np.argsort(-self.fitness)[-self.elitist_fraction:]])
 
     def mutation(self):
         '''
         create new pop by repeating mutated copies of elitist individuals
         '''
         # number of copies of elitists required
-        num_reps = int((self.pop_size - self.elitist_fraction) / self.elitist_fraction) + 1
+        num_reps = int((self.pop_size - self.elitist_fraction) / self.elitist_fraction) + 1 #- self.elitist_fraction
 
         # creating copies and adding noise
-        print('POP : ', self.pop)
+        #print('POP : ', self.pop)
         mutated_elites = np.tile(self.pop, [num_reps, 1])
-        print('mutated_elites: ', mutated_elites)
+        #print('mutated_elites: ', mutated_elites)
 
         rand_pop = []
         for one_pop in range(self.pop_size):
@@ -149,12 +152,15 @@ class EvolSearch:
 
         # concatenating elites with their mutated versions
         self.pop = np.vstack((self.pop, mutated_elites))
+        #self.pop = np.vstack((self.pop, self.best_parents))
 
         # clipping to pop_size
-        self.pop = self.pop[:self.pop_size, :]
-
+        self.pop = self.pop[:self.pop_size-self.elitist_fraction, :]
+        self.pop = np.vstack((self.pop, self.best_parents))
         # clipping to genotype range
-        self.pop = np.clip(self.pop, 0, 1)
+        #self.pop = np.clip(self.pop, -1, 1)
+        #print('PARRRRRRRRRRRRREEEEEENTSSSSSS', self.best_parents)
+        #print('POOOPPPPPPPPPPPPPPPPPP', self.pop)
 
     def step_generation(self):
         '''
@@ -201,7 +207,7 @@ class EvolSearch:
         '''
         return the fitness value of the best individual
         '''
-        print('Fitness: ', self.fitness)
+        #print('Fitness: ', self.fitness)
         return np.min(self.fitness)
 
     def get_mean_fitness(self):

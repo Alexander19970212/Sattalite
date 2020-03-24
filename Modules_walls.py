@@ -228,7 +228,7 @@ class Balance_mass:
             bounds.append([-1, 1])
 
         evol_params = {
-            'num_processes': 3,  # (optional) number of proccesses for multiprocessing.Pool
+            'num_processes': 4,  # (optional) number of proccesses for multiprocessing.Pool
             'pop_size': 40,  # population size
             'bounds': bounds,
             'genotype_size': len(bounds),  # dimensionality of solution
