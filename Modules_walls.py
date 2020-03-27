@@ -57,10 +57,11 @@ import math
 
 
 class Balance_mass:
-    def __init__(self, frame, modules, walls):
+    def __init__(self, frame, modules, walls, limits):
 
         # self.display, self.start_display, self.add_menu, self.add_function_to_menu = init_display()
         self.name_frame = frame
+        self.limits = limits
         self.modules = {}
         self.names_models = []
         self.history_args = {}
@@ -194,6 +195,98 @@ class Balance_mass:
 
         self.modules[name_body] = shape
 
+    def Locate_centre_face2(self, number, name_body, angle, x_drive, y_drive):
+        from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeFace, BRepBuilderAPI_MakeWire, BRepBuilderAPI_MakeEdge, \
+            BRepBuilderAPI_Copy
+        from OCC.Core.Bnd import Bnd_Box
+        from OCC.Core.BRepBndLib import brepbndlib_Add
+        from OCC.Core.gp import gp_Pnt, gp_Trsf, gp_Vec, gp_Pln, gp_Dir, gp_Ax3, gp_Ax1
+        from OCC.Core.TopLoc import TopLoc_Location
+
+        cp = BRepBuilderAPI_Copy(self.reserv_models[name_body])
+        cp.Perform(self.reserv_models[name_body])
+        shape = cp.Shape()
+
+        # move to zero
+        bbox = Bnd_Box()
+        brepbndlib_Add(shape, bbox)
+        xmin, ymin, zmin, xmax, ymax, zmax = bbox.Get()
+
+        trsf = gp_Trsf()
+        trsf.SetTranslation(gp_Vec(-xmin - (xmax - xmin) / 2, -ymin - (ymax - ymin) / 2, -zmin))
+        shape.Move(TopLoc_Location(trsf))
+
+        # Process vector of rotation to face
+        x, y = 1, 1
+
+        x = -self.walls[number][1][1]
+        y = self.walls[number][1][0]
+
+        z = 0
+        P0 = gp_Pnt(0, 0, 0)
+        P1 = gp_Pnt(0, 0, 1)
+        P2 = gp_Pnt(self.walls[number][1][0], self.walls[number][1][1], self.walls[number][1][2])
+
+        # rotation to Ax z
+        v_x = gp_Vec(P0, gp_Pnt(0, 1, 0))
+        v_r = gp_Vec(P0, gp_Pnt(x, y, z))
+        trsf = gp_Trsf()
+        #print(v_r.Angle(v_x))
+        trsf.SetRotation(gp_Ax1(P0, gp_Dir(0, 0, 1)), v_r.Angle(v_x))
+        shape.Move(TopLoc_Location(trsf))
+
+        # rotation in parallel to face
+        v0 = gp_Vec(P0, P1)
+        v1 = gp_Vec(P0, P2)
+        # print(v1.Angle(v0))
+        trsf = gp_Trsf()
+        trsf.SetRotation(gp_Ax1(P0, gp_Dir(x, y, z)), v1.Angle(v0))
+        # move to face
+        shape.Move(TopLoc_Location(trsf))
+        trsf = gp_Trsf()
+        trsf.SetTranslation(gp_Vec(self.walls[number][0][0], self.walls[number][0][1], self.walls[number][0][2]))
+        shape.Move(TopLoc_Location(trsf))
+
+        # Rotation by given angle
+        trsf = gp_Trsf()
+        trsf.SetRotation(
+            gp_Ax1(P0, gp_Dir(self.walls[number][1][0], self.walls[number][1][1], self.walls[number][1][2])), angle)
+        shape.Move(TopLoc_Location(trsf))
+
+        # initional x, y
+        offset_y, offset_x = self.rot_point(xmax - xmin, ymax - ymin, angle)
+
+        limit_x = self.walls[number][3][0] / 2 - offset_x
+        limit_y = self.walls[number][3][1] / 2 - offset_y
+
+        move_x = int(limit_x * x_drive)
+        move_y = int(limit_y * y_drive)
+
+        # Move to x and y
+        x_axy = self.walls[number][1][1] * self.walls[number][2][2] - self.walls[number][1][2] * self.walls[number][2][
+            1]
+        y_axy = -(self.walls[number][1][0] * self.walls[number][2][2] - self.walls[number][1][2] *
+                  self.walls[number][2][
+                      0])
+        z_axy = self.walls[number][1][0] * self.walls[number][2][1] - self.walls[number][1][1] * self.walls[number][2][
+            0]
+
+        x_axy *= move_y
+        y_axy *= move_y
+        z_axy *= move_y
+
+        trsf = gp_Trsf()
+        trsf.SetTranslation(gp_Vec(x_axy, y_axy, z_axy))
+        shape.Move(TopLoc_Location(trsf))
+
+        trsf = gp_Trsf()
+        trsf.SetTranslation(gp_Vec(self.walls[number][2][0] * move_x, self.walls[number][2][1] * move_x,
+                                   self.walls[number][2][2] * move_x))
+        shape.Move(TopLoc_Location(trsf))
+        # print(name_body, shape)
+
+        self.modules[name_body] = shape
+
     # def rotate_by_centre(self, shape, number, angle, P0, P2):
 
     '''def optimithation_evolution(self):
@@ -222,8 +315,8 @@ class Balance_mass:
         from OCC.Core.Bnd import Bnd_Box
         bounds = []
         for name in self.reserv_models:
-            bounds.append([0, len(self.walls)])
-            bounds.append([0, 4])
+            bounds.append([0, len(self.limits[name][0])])
+            bounds.append([0, len(self.limits[name][1])])
             bounds.append([-1, 1])
             bounds.append([-1, 1])
 
@@ -251,8 +344,8 @@ class Balance_mass:
         best_fit = []
         mean_fit = []
         num_gen = 0
-        max_num_gens = 5
-        desired_fitness = 0.2
+        max_num_gens = 8
+        desired_fitness = 0.01
         best_fitn = 1
         while best_fitn > desired_fitness and num_gen < max_num_gens:
         #while num_gen < max_num_gens:
@@ -299,10 +392,11 @@ class Balance_mass:
         for i, name in enumerate(self.reserv_models):
             # self.Locate_centre_face(int(m * (args[i * 4] + 1) / 2)-1, name, math.radians(int(args[i * 4 + 1] + 1) * 2),
             #                         int(args[i * 4 + 2]), int(args[i * 4 + 3]))
+            number = self.limits[name][0][int(args[i * 4])]
+            rotation = math.radians(self.limits[name][1][int(args[i * 4 + 1])])
 
-            self.Locate_centre_face(int(args[i * 4]), name,
-                                    math.radians(int(args[i * 4 + 1]) * 90),
-                                    args[i * 4 + 2], args[i * 4 + 3])
+
+            self.Locate_centre_face(number, name, rotation, args[i * 4 + 2], args[i * 4 + 3])
 
         intr1 = self.inter_with_frame2()
         if intr1 == 0:
@@ -633,6 +727,12 @@ if __name__ == '__main__':
 
     # frame = 'C:\Users\Alexander\PycharmProjects\Sattalite\part_of_sattelate\karkase\Assemb.STEP'
 
+    limits = {'DAV_WS16.STEP': [[1, 2], [0, 45, 60, 90]],
+               'DAV2_WS16.STEP': [[1, 2, 3, 0], [30, 90, 180]],
+               'DAV3_WS16.STEP': [[0, 3], [0, 180]],
+               'Magnitometr.STEP': [[2], [30, 45, 90, 135]]}
+    #[Faces, rotation]
+
     walls = [[[0, 110, 0], [0, 1, 0], [1, 0, 0], [186, 248]],
              [[110, 0, 0], [1, 0, 0], [0, -1, 0], [186, 248]],
              [[0, -110, 0], [0, -1, 0], [-1, 0, 0], [186, 248]],
@@ -642,7 +742,7 @@ if __name__ == '__main__':
     # distant between xero point and face plt, normal of wall
     # distant between zero point anf face plt, vector that will drop axis z, vector сонаправленный X
 
-    test = Balance_mass(r'C:\Users\Alexander\PycharmProjects\Sattalite\part_of_sattelate\karkase\Assemb.STEP', modules, walls)
+    test = Balance_mass(r'C:\Users\Alexander\PycharmProjects\Sattalite\part_of_sattelate\karkase\Assemb.STEP', modules, walls, limits)
     # test.var_test()
     test.move_frame()
     test.optimithation_evolution2()
