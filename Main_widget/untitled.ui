@@ -27,17 +27,6 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
-    <item row="0" column="0">
-     <widget class="QPushButton" name="Open_frame">
-      <property name="autoFillBackground">
-       <bool>false</bool>
-      </property>
-      <property name="text">
-       <string>Open
- frame</string>
-      </property>
-     </widget>
-    </item>
     <item row="0" column="1">
      <widget class="QPushButton" name="Start_optimization">
       <property name="text">
@@ -60,11 +49,14 @@ result</string>
       </property>
      </widget>
     </item>
-    <item row="0" column="3">
-     <widget class="QPushButton" name="Save_report">
+    <item row="0" column="0">
+     <widget class="QPushButton" name="Open_frame">
+      <property name="autoFillBackground">
+       <bool>false</bool>
+      </property>
       <property name="text">
-       <string>Save 
-report</string>
+       <string>Open
+ frame</string>
       </property>
      </widget>
     </item>
@@ -85,6 +77,37 @@ composition</string>
       </property>
      </widget>
     </item>
+    <item row="0" column="3">
+     <widget class="QPushButton" name="Save_report">
+      <property name="text">
+       <string>Save 
+report</string>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="4">
+     <widget class="QScrollArea" name="scrollArea">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="widgetResizable">
+       <bool>true</bool>
+      </property>
+      <widget class="QWidget" name="scrollAreaWidgetContents">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>703</width>
+         <height>899</height>
+        </rect>
+       </property>
+      </widget>
+     </widget>
+    </item>
     <item row="1" column="0" colspan="4">
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
@@ -99,7 +122,7 @@ composition</string>
          <rect>
           <x>20</x>
           <y>20</y>
-          <width>291</width>
+          <width>351</width>
           <height>31</height>
          </rect>
         </property>
@@ -112,7 +135,7 @@ composition</string>
          <rect>
           <x>20</x>
           <y>60</y>
-          <width>291</width>
+          <width>351</width>
           <height>31</height>
          </rect>
         </property>
@@ -125,7 +148,7 @@ composition</string>
          <rect>
           <x>20</x>
           <y>310</y>
-          <width>291</width>
+          <width>351</width>
           <height>31</height>
          </rect>
         </property>
@@ -138,7 +161,7 @@ composition</string>
          <rect>
           <x>20</x>
           <y>350</y>
-          <width>291</width>
+          <width>351</width>
           <height>31</height>
          </rect>
         </property>
@@ -159,38 +182,12 @@ composition</string>
          <string>Dipsplay settings:</string>
         </property>
        </widget>
-       <widget class="QRadioButton" name="Display_selected">
-        <property name="geometry">
-         <rect>
-          <x>20</x>
-          <y>430</y>
-          <width>121</width>
-          <height>20</height>
-         </rect>
-        </property>
-        <property name="text">
-         <string>Display selected</string>
-        </property>
-       </widget>
-       <widget class="QRadioButton" name="Display_axis">
-        <property name="geometry">
-         <rect>
-          <x>20</x>
-          <y>450</y>
-          <width>121</width>
-          <height>20</height>
-         </rect>
-        </property>
-        <property name="text">
-         <string>Display axis</string>
-        </property>
-       </widget>
        <widget class="QPushButton" name="Change_orientation">
         <property name="geometry">
          <rect>
           <x>20</x>
           <y>480</y>
-          <width>291</width>
+          <width>351</width>
           <height>31</height>
          </rect>
         </property>
@@ -203,7 +200,7 @@ composition</string>
          <rect>
           <x>20</x>
           <y>100</y>
-          <width>291</width>
+          <width>351</width>
           <height>201</height>
          </rect>
         </property>
@@ -229,7 +226,7 @@ composition</string>
          <bool>false</bool>
         </attribute>
         <attribute name="horizontalHeaderDefaultSectionSize">
-         <number>270</number>
+         <number>331</number>
         </attribute>
         <attribute name="horizontalHeaderHighlightSections">
          <bool>false</bool>
@@ -254,6 +251,32 @@ composition</string>
         <row/>
         <row/>
         <column/>
+       </widget>
+       <widget class="QCheckBox" name="display_selected">
+        <property name="geometry">
+         <rect>
+          <x>20</x>
+          <y>430</y>
+          <width>131</width>
+          <height>20</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Display selected</string>
+        </property>
+       </widget>
+       <widget class="QCheckBox" name="checkBox_2">
+        <property name="geometry">
+         <rect>
+          <x>20</x>
+          <y>450</y>
+          <width>121</width>
+          <height>20</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Display axis</string>
+        </property>
        </widget>
       </widget>
       <widget class="QWidget" name="tab_faces">
@@ -1031,29 +1054,6 @@ composition</string>
          <string/>
         </property>
        </widget>
-      </widget>
-     </widget>
-    </item>
-    <item row="1" column="4">
-     <widget class="QScrollArea" name="scrollArea">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="widgetResizable">
-       <bool>true</bool>
-      </property>
-      <widget class="QWidget" name="scrollAreaWidgetContents">
-       <property name="geometry">
-        <rect>
-         <x>0</x>
-         <y>0</y>
-         <width>703</width>
-         <height>899</height>
-        </rect>
-       </property>
       </widget>
      </widget>
     </item>
