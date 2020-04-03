@@ -27,64 +27,6 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
-    <item row="0" column="1">
-     <widget class="QPushButton" name="Start_optimization">
-      <property name="text">
-       <string>Start 
-optimithation</string>
-      </property>
-      <property name="shortcut">
-       <string notr="true"/>
-      </property>
-      <property name="autoRepeat">
-       <bool>true</bool>
-      </property>
-     </widget>
-    </item>
-    <item row="0" column="2">
-     <widget class="QPushButton" name="Save_result">
-      <property name="text">
-       <string>Save 
-result</string>
-      </property>
-     </widget>
-    </item>
-    <item row="0" column="0">
-     <widget class="QPushButton" name="Open_frame">
-      <property name="autoFillBackground">
-       <bool>false</bool>
-      </property>
-      <property name="text">
-       <string>Open
- frame</string>
-      </property>
-     </widget>
-    </item>
-    <item row="0" column="4">
-     <widget class="QPushButton" name="Random_composition">
-      <property name="enabled">
-       <bool>true</bool>
-      </property>
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="text">
-       <string>Random 
-composition</string>
-      </property>
-     </widget>
-    </item>
-    <item row="0" column="3">
-     <widget class="QPushButton" name="Save_report">
-      <property name="text">
-       <string>Save 
-report</string>
-      </property>
-     </widget>
-    </item>
     <item row="1" column="4">
      <widget class="QScrollArea" name="scrollArea">
       <property name="sizePolicy">
@@ -108,10 +50,51 @@ report</string>
       </widget>
      </widget>
     </item>
+    <item row="0" column="2">
+     <widget class="QPushButton" name="Save_result">
+      <property name="text">
+       <string>Save 
+result</string>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="0">
+     <widget class="QPushButton" name="Open_frame">
+      <property name="autoFillBackground">
+       <bool>false</bool>
+      </property>
+      <property name="text">
+       <string>Open
+ frame</string>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="1">
+     <widget class="QPushButton" name="Start_optimization">
+      <property name="text">
+       <string>Start 
+optimithation</string>
+      </property>
+      <property name="shortcut">
+       <string notr="true"/>
+      </property>
+      <property name="autoRepeat">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="3">
+     <widget class="QPushButton" name="Show_frame">
+      <property name="text">
+       <string>Show
+frame</string>
+      </property>
+     </widget>
+    </item>
     <item row="1" column="0" colspan="4">
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="tab_models">
        <attribute name="title">
@@ -235,7 +218,7 @@ report</string>
          <number>29</number>
         </attribute>
         <attribute name="verticalHeaderVisible">
-         <bool>true</bool>
+         <bool>false</bool>
         </attribute>
         <attribute name="verticalHeaderDefaultSectionSize">
          <number>28</number>
@@ -288,7 +271,7 @@ report</string>
          <rect>
           <x>20</x>
           <y>20</y>
-          <width>291</width>
+          <width>351</width>
           <height>31</height>
          </rect>
         </property>
@@ -301,7 +284,7 @@ report</string>
          <rect>
           <x>20</x>
           <y>60</y>
-          <width>291</width>
+          <width>351</width>
           <height>31</height>
          </rect>
         </property>
@@ -309,22 +292,12 @@ report</string>
          <string>Select</string>
         </property>
        </widget>
-       <widget class="QColumnView" name="view_faces">
-        <property name="geometry">
-         <rect>
-          <x>20</x>
-          <y>110</y>
-          <width>291</width>
-          <height>191</height>
-         </rect>
-        </property>
-       </widget>
        <widget class="QPushButton" name="Remove_sel_face">
         <property name="geometry">
          <rect>
           <x>20</x>
           <y>310</y>
-          <width>291</width>
+          <width>351</width>
           <height>31</height>
          </rect>
         </property>
@@ -337,13 +310,70 @@ report</string>
          <rect>
           <x>20</x>
           <y>350</y>
-          <width>291</width>
+          <width>351</width>
           <height>31</height>
          </rect>
         </property>
         <property name="text">
          <string>Remove all</string>
         </property>
+       </widget>
+       <widget class="QTableWidget" name="tableWidget_faces">
+        <property name="geometry">
+         <rect>
+          <x>20</x>
+          <y>100</y>
+          <width>351</width>
+          <height>201</height>
+         </rect>
+        </property>
+        <property name="lineWidth">
+         <number>2</number>
+        </property>
+        <property name="showGrid">
+         <bool>true</bool>
+        </property>
+        <property name="wordWrap">
+         <bool>true</bool>
+        </property>
+        <property name="cornerButtonEnabled">
+         <bool>true</bool>
+        </property>
+        <property name="rowCount">
+         <number>7</number>
+        </property>
+        <property name="columnCount">
+         <number>1</number>
+        </property>
+        <attribute name="horizontalHeaderVisible">
+         <bool>false</bool>
+        </attribute>
+        <attribute name="horizontalHeaderDefaultSectionSize">
+         <number>331</number>
+        </attribute>
+        <attribute name="horizontalHeaderHighlightSections">
+         <bool>false</bool>
+        </attribute>
+        <attribute name="horizontalHeaderMinimumSectionSize">
+         <number>29</number>
+        </attribute>
+        <attribute name="verticalHeaderVisible">
+         <bool>false</bool>
+        </attribute>
+        <attribute name="verticalHeaderDefaultSectionSize">
+         <number>28</number>
+        </attribute>
+        <attribute name="verticalHeaderHighlightSections">
+         <bool>true</bool>
+        </attribute>
+        <row/>
+        <row/>
+        <row/>
+        <row/>
+        <row/>
+        <row/>
+        <row/>
+        <column/>
        </widget>
       </widget>
       <widget class="QWidget" name="tab_limits">
@@ -1055,6 +1085,23 @@ report</string>
         </property>
        </widget>
       </widget>
+     </widget>
+    </item>
+    <item row="0" column="4">
+     <widget class="QPushButton" name="Random_composition">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="text">
+       <string>Random 
+composition</string>
+      </property>
      </widget>
     </item>
    </layout>
