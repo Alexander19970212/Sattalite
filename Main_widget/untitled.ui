@@ -292,24 +292,11 @@ frame</string>
          <string>Select</string>
         </property>
        </widget>
-       <widget class="QPushButton" name="Remove_sel_face">
-        <property name="geometry">
-         <rect>
-          <x>20</x>
-          <y>310</y>
-          <width>351</width>
-          <height>31</height>
-         </rect>
-        </property>
-        <property name="text">
-         <string>Remove selected</string>
-        </property>
-       </widget>
        <widget class="QPushButton" name="Remove_all_faces">
         <property name="geometry">
          <rect>
           <x>20</x>
-          <y>350</y>
+          <y>310</y>
           <width>351</width>
           <height>31</height>
          </rect>

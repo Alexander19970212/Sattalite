@@ -17,7 +17,7 @@ import os
 import os
 import os.path
 import sys
-#import wx
+# import wx
 
 from OCC.Core.STEPControl import STEPControl_Reader
 from OCC.Core.IFSelect import IFSelect_RetDone, IFSelect_ItemsByEntity
@@ -41,7 +41,7 @@ from OCC.Core.GProp import GProp_GProps
 from OCC.Core.BOPAlgo import BOPAlgo_Builder
 from OCC.Core.BRepAlgoAPI import BRepAlgoAPI_Fuse, BRepAlgoAPI_Common, BRepAlgoAPI_Section, BRepAlgoAPI_Cut
 import math
-#display, start_display, add_menu, add_function_to_menu = init_display('wx')
+# display, start_display, add_menu, add_function_to_menu = init_display('wx')
 from OCC.Core.BRepClass3d import BRepClass3d_SolidClassifier
 
 back = OCC.Display.backend.load_backend()
@@ -50,11 +50,60 @@ from OCC.Display.qtDisplay import qtViewer3d
 from OCC.Display.SimpleGui import init_display
 from OCC.Extend.DataExchange import read_step_file
 from PyQt5 import QtWidgets, QtCore, QtPrintSupport, QtGui
+import construction
 from PyQt5.QtWidgets import *
 
 uifile_1 = "Main_widget/untitled.ui"  # Enter file here.
 
 form_1, base_1 = uic.loadUiType(uifile_1)
+
+
+class App_folder(QWidget):
+
+    def __init__(self):
+        super().__init__()
+        self.title = 'PyQt5 file dialogs - pythonspot.com'
+        self.left = 10
+        self.top = 10
+        self.width = 640
+        self.height = 480
+        self.initUI()
+
+    def initUI(self):
+        self.setWindowTitle(self.title)
+        self.setGeometry(self.left, self.top, self.width, self.height)
+
+        # self.openFileNameDialog()
+        # self.openFileNamesDialog()
+        # self.saveFileDialog()
+
+        # self.show()
+
+    def openFileNameDialog(self):
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+
+        fileName = QFileDialog.getExistingDirectory(self, "Open a folder")#, "/home/my_user_name/",
+                                                       #QtGui.QFileDialog.ShowDirsOnl)
+        if fileName:
+            # print(fileName)
+            return fileName
+
+    def openFileNamesDialog(self):
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+        files, _ = QFileDialog.getOpenFileNames(self, "QFileDialog.getOpenFileNames()", "",
+                                                "All Files (*);;Python Files (*.py)", options=options)
+        if files:
+            print(files)
+
+    def saveFileDialog(self):
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+        fileName, _ = QFileDialog.getSaveFileName(self, "QFileDialog.getSaveFileName()", "",
+                                                  "All Files (*);;Text Files (*.txt)", options=options)
+        if fileName:
+            print(fileName)
 
 
 class App(QWidget):
@@ -129,14 +178,52 @@ class Main(base_1, form_1):
         self.Remove_selected.clicked.connect(self.remove_selected)
         self.tableWidget.itemClicked.connect(self.tablewidgetclicked)
         self.Select_faces.clicked.connect(self.select_faces)
+        self.Remove_all_faces.clicked.connect(self.remove_all_faces)
+        self.Add_folder.clicked.connect(self.add_folder)
+        # self.Random_composition.clicked.connect(self.random_composition)
 
         # self.canvas.mpl_connect('button_press_event',self.onClick)
         self.frame = None
         self.modules = {}
         self.path_modules = {}
+        self.limits = []
         self.faces_name = []
         self.faces = []
         self.faces_shape = []
+        self.constructor = construction.Balance_mass()
+
+        #############################################################
+        self.limits = {'DAV_WS16.STEP': [[1, 2], [0, 45, 60, 90]],
+                       'DAV2_WS16.STEP': [[1, 2, 3, 0], [30, 90, 180]],
+                       'DAV3_WS16.STEP': [[0, 3], [0, 180]],
+                       'Magnitometr.STEP': [[2], [30, 45, 90, 135]]}
+        #############################################################
+
+    def add_folder(self):
+        ex = App_folder()
+        filename = ex.openFileNameDialog()
+        # sys.exit(app.exec_())
+        print(filename)
+        from os import listdir
+        from os.path import isfile, join
+        onlyfiles = [f for f in listdir(filename) if isfile(join(filename, f))]
+        print(onlyfiles)
+        for name in onlyfiles:
+            #self.path_modules[name] = filename
+            self.modules[name] = read_step_file(filename+'/'+name)
+
+        self.reload_modules()
+
+
+    def random_composition(self):
+
+        self.constructor.initial(self.frame, self.modules, self.faces, self.limits)
+        self.constructor.random_location2()
+        result = self.constructor.modules
+        self.show_frame()
+
+        for module in result:
+            self.display.DisplayShape(result[module], color='RED')
 
     def select_faces(self):
         self.show_frame()
@@ -163,28 +250,33 @@ class Main(base_1, form_1):
             print('--> Bounds', xmax - xmin, ymax - ymin, zmax - zmin)
             centre, normal, X_axis = self.recognize_face(topods_Face(shape))
             if shape in self.faces_shape:
-                #self.display.DisplayShape(shape, color='GREEN', transparency=0.9)
-                #self.display.Context.Remove(shape)#######
-                #self.display.Context.
+                # self.display.DisplayShape(shape, color='GREEN', transparency=0.9)
+                # self.display.Context.Remove(shape)#######
+                # self.display.Context.
                 ind = self.faces_shape.index(shape)
 
                 self.faces_shape.pop(ind)
                 self.faces.pop(ind)
                 self.faces_name.pop(ind)
-                ##############################################
 
-                self.display.EraseAll()
-                self.display.Context.RemoveAll(True)
-                ##############################################
             else:
-                self.display.DisplayShape(shape, color='RED', transparency=0.8)
-                #self.display.FitAll()
+                # self.display.DisplayShape(shape, color='RED', transparency=0.8)
+                # self.display.FitAll()
                 self.faces.append([centre, normal, X_axis, bounds])
                 self.faces_shape.append(shape)
-                self.faces_name.append(bounds[0]*bounds[1])
+                self.faces_name.append(bounds[0] * bounds[1])
 
-            self.display.SetCloseAllContexts()#############################################################
+            # self.display.SetCloseAllContexts()
             self.reload_faces()
+            self.display.SetSelectionModeFace()  # switch to Face selection mode
+            # self.display.register_select_callback(self.recognize_clicked)
+
+    def remove_all_faces(self):
+        self.faces_shape = []
+        self.faces = []
+        self.faces_name = []
+        self.reload_faces()
+        self.display.SetSelectionModeFace()
 
     def recognize_face(self, a_face):
         """ Takes a TopoDS shape and tries to identify its nature
@@ -248,10 +340,10 @@ class Main(base_1, form_1):
         radius_of_arrow_head = 20.0
         # Create the Coordinate and Draw it
         self.CoordinateCrossShape(centerpoint_sphere_radius,
-                             arrowlength,
-                             radius_of_arrow_shaft,
-                             lenght_of_arrow_head,
-                             radius_of_arrow_head)
+                                  arrowlength,
+                                  radius_of_arrow_shaft,
+                                  lenght_of_arrow_head,
+                                  radius_of_arrow_head)
 
     def CoordinateCrossShape(self, centerpoint_sphere_radius,
                              arrowlength,
@@ -276,6 +368,7 @@ class Main(base_1, form_1):
         @type radius_of_arrow_head: scalar
         @return: Arrow as Shape object
         '''
+
     pass
     # The origin of the coordinate system
     '''Origin = scipy.zeros((3, 1), dtype=float)
@@ -320,7 +413,7 @@ class Main(base_1, form_1):
 
     def tablewidgetclicked(self):
         if self.display_selected.isChecked() == True:
-            #print(self.tableWidget.currentItem().text())
+            # print(self.tableWidget.currentItem().text())
             self.display.EraseAll()
             self.display.Context.RemoveAll(True)
             self.display.DisplayShape(self.modules[self.tableWidget.currentItem().text()], color='RED',
@@ -334,7 +427,6 @@ class Main(base_1, form_1):
         self.display.Context.RemoveAll(True)
         self.tableWidget.clearContents()
         self.reload_modules()
-
 
     def remove_all(self):
         '''for row, item in enumerate(self.modules):
@@ -389,26 +481,25 @@ class Main(base_1, form_1):
             self.tableWidget.setItem(row - 1, 1, newitem)
 
     def reload_faces(self):
+
+        self.show_frame()
         self.tableWidget_faces.clearContents()
         for row, item in enumerate(self.faces_name):
-            #print(row)
-            #self.display.DisplayShape(self.faces_shape[row], color='RED', transparency=0.9)
+            # print(row)
+            self.display.DisplayShape(self.faces_shape[row], color='RED')
 
             newitem = QTableWidgetItem(str(item))
             newitem.setTextAlignment(QtCore.Qt.AlignCenter)
             self.tableWidget_faces.setItem(row - 1, 1, newitem)
 
-    def random_composition(self):
-        pass
-
     def show_frame(self):
         if self.frame != None:
+            self.display.SetCloseAllContexts()
             self.display.EraseAll()
             self.display.Context.RemoveAll(True)
             self.display.DisplayShape(self.frame, color='GREEN', transparency=0.9)
             # self.display.Repaint()
             self.display.FitAll()
-
 
     def save_result(self):
         pass
