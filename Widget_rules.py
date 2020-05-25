@@ -22,14 +22,15 @@ from PyQt5 import QtGui
 from PyQt5.QtWidgets import (QLabel, QRadioButton, QLineEdit, QApplication, QWidget, QSplitter, QTreeView, QTextEdit,
                              QGroupBox, QFormLayout,
                              QCheckBox, QHBoxLayout, QFileSystemModel, QVBoxLayout, QTreeWidgetItem, QTreeWidget,
-                             QStackedWidget)
-from PyQt5.QtCore import QDir
+                             QStackedWidget, QPushButton)
+from PyQt5 import QtCore, Qt
 import os
 
 
 class MyWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.setGeometry(300, 300, 500, 500)
 
         self.tree_names = {'General requests': {'Min distances'},
                                  'General for satellite': {'Max angle of inertial axis', 'Distance of centre mass'},
@@ -56,6 +57,33 @@ class MyWidget(QWidget):
 
         self.tree = QTreeWidget()  # QTreeView()
         self.tree.setHeaderLabels(['Layout rules'])
+        self.tree.setFixedHeight(500)
+        self.tree.setFixedWidth(250)
+
+        bt_op_conf = QPushButton('Open configuration', self)
+        bt_op_conf.setToolTip('This is an example button')
+        bt_op_conf.move(100, 70)
+        bt_op_conf.setFixedSize(250, 30)
+
+        bt_sv_conf = QPushButton('Save configuration', self)
+        bt_sv_conf.setToolTip('This is an example button')
+        bt_sv_conf.move(100, 70)
+        bt_sv_conf.setFixedSize(250, 30)
+
+        bt_app = QPushButton('Apply', self)
+        bt_app.setToolTip('This is an example button')
+        bt_app.move(100, 70)
+        bt_app.setFixedSize(150, 30)
+
+        bt_cls = QPushButton('Close', self)
+        bt_cls.setToolTip('This is an example button')
+        bt_cls.move(100, 70)
+        bt_cls.setFixedSize(150, 30)
+
+        h1_box = QHBoxLayout()
+        h1_box.addWidget(bt_app, alignment=QtCore.Qt.AlignRight)
+        h1_box.addWidget(bt_cls)#, alignment=QtCore.Qt.AlignRight)
+
 
         for category in self.tree_names:
             cg = QTreeWidgetItem(self.tree, [category])
@@ -71,6 +99,23 @@ class MyWidget(QWidget):
 
         self.preparing_stack()
 
+        self.vbox = QVBoxLayout()
+        self.vbox.addWidget(self.tree)
+        self.vbox.addWidget(bt_op_conf)
+        self.vbox.addWidget(bt_sv_conf)
+
+        self.hbox = QHBoxLayout()
+        self.hbox.addLayout(self.vbox)
+
+        v1_box = QVBoxLayout()
+
+        v1_box.addWidget(self.Stack)
+        v1_box.addLayout(h1_box)
+
+        self.hbox.addLayout(v1_box)
+
+        self.setLayout(self.hbox)
+
         '''self.setWindowTitle('Direct tree')
         self.resize(600, 400)
 
@@ -84,7 +129,7 @@ class MyWidget(QWidget):
         # self.setLayout(self.vbox)
 
         self.tree.currentItemChanged.connect(self.display)
-        self.setGeometry(300, 50, 10, 10)
+
         self.setWindowTitle('StackedWidget demo')
         self.show()
 
@@ -108,12 +153,8 @@ class MyWidget(QWidget):
         self.Stack.addWidget(self.stack1)
         self.Stack.addWidget(self.stack2)
         self.Stack.addWidget(self.stack3)
+        self.Stack.setFixedWidth(600)
 
-        self.vbox = QVBoxLayout()
-        self.vbox.addWidget(self.tree)
-        self.vbox.addWidget(self.Stack)
-
-        self.setLayout(self.vbox)
 
     def _on_double_clicked(self, it, col):
         # print(it, col, it.text(col))
@@ -176,11 +217,28 @@ class MyWidget(QWidget):
 
     def display(self, i):
         print(type(i))
-        self.Stack.setCurrentIndex(1)
+        self.Stack.setCurrentIndex(3)
 
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    app.setStyle('Fusion')
+    palette = QtGui.QPalette()
+    palette.setColor(QtGui.QPalette.Window, QtGui.QColor(53, 53, 53))
+    palette.setColor(QtGui.QPalette.WindowText, QtCore.Qt.white)
+    palette.setColor(QtGui.QPalette.Base, QtGui.QColor(15, 15, 15))
+    palette.setColor(QtGui.QPalette.AlternateBase, QtGui.QColor(53, 53, 53))
+    palette.setColor(QtGui.QPalette.ToolTipBase, QtCore.Qt.white)
+    palette.setColor(QtGui.QPalette.ToolTipText, QtCore.Qt.white)
+    palette.setColor(QtGui.QPalette.Text, QtCore.Qt.white)
+    palette.setColor(QtGui.QPalette.Button, QtGui.QColor(53, 53, 53))
+    palette.setColor(QtGui.QPalette.ButtonText, QtCore.Qt.white)
+    palette.setColor(QtGui.QPalette.BrightText, QtCore.Qt.red)
+
+    palette.setColor(QtGui.QPalette.Highlight, QtGui.QColor(200, 200, 200).lighter())
+    palette.setColor(QtGui.QPalette.HighlightedText, QtCore.Qt.black)
+    app.setPalette(palette)
     win = MyWidget()
     # win.show()
     sys.exit(app.exec_())
+    #142, 45, 197
