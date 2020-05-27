@@ -214,7 +214,7 @@ class MyWidget(QWidget):
 
         col_2 = QVBoxLayout()
         label = QLabel(self)
-        pixmap = QtGui.QPixmap('Figure_1.png')
+        pixmap = QtGui.QPixmap('images_2.png')
         label.setPixmap(pixmap)
         col_2.addWidget(label)
         col_2.addWidget(QLabel('Second component'))
