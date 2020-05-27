@@ -20,10 +20,10 @@ if __name__ == '__main__':
 import sys
 from PyQt5 import QtGui
 from PyQt5.QtWidgets import (QLabel, QRadioButton, QLineEdit, QApplication, QWidget, QSplitter, QTreeView, QTextEdit,
-                             QGroupBox, QFormLayout,
+                             QGroupBox, QFormLayout, QComboBox, QListView,
                              QCheckBox, QHBoxLayout, QFileSystemModel, QVBoxLayout, QTreeWidgetItem, QTreeWidget,
                              QStackedWidget, QPushButton)
-from PyQt5 import QtCore, Qt
+from PyQt5 import QtCore, Qt, uic
 import os
 
 
@@ -172,15 +172,8 @@ class MyWidget(QWidget):
         self.stack1.setLayout(layout)
 
     def Type_constrain_1(self):
-        layout = QFormLayout()
-        print('Type_Constrain_1')
-        sex = QHBoxLayout()
-        sex.addWidget(QRadioButton("Male"))
-        sex.addWidget(QRadioButton("Female"))
-        layout.addRow(QLabel("Sex"), sex)
-
-        # groupbox.setEnabled(False)
-        self.stack1.setLayout(layout)
+        #layout = QFormLayout()
+        pass
 
     def Type_constrain_2(self):
         layout = QFormLayout()
@@ -199,12 +192,42 @@ class MyWidget(QWidget):
         self.stack1.setLayout(layout)
 
     def stack2UI(self):
-        layout = QFormLayout()
-        sex = QHBoxLayout()
-        sex.addWidget(QRadioButton("Male"))
-        sex.addWidget(QRadioButton("Female"))
-        layout.addRow(QLabel("Sex"), sex)
-        layout.addRow("Date of Birth", QLineEdit())
+        col_1 = QVBoxLayout()
+        col_1.addWidget(QLabel('Minimal distance'))
+        col_1.addWidget(QRadioButton('General'))
+        col_1.addWidget(QRadioButton('For component'))
+        col_1.addWidget(QLabel('Main component'))
+        col_1.addWidget(QComboBox())
+        col_1.addWidget(QLabel('D, distance'))
+
+        row_val = QHBoxLayout()
+        row_val.addWidget(QLineEdit())
+        row_val.addWidget(QComboBox())
+
+        col_1.addLayout(row_val)
+
+        row_bots = QHBoxLayout()
+        row_bots.addWidget(QPushButton('Add rule'))
+        row_bots.addWidget(QPushButton('Save rule'))
+
+        col_1.addLayout(row_bots)
+
+        col_2 = QVBoxLayout()
+        label = QLabel(self)
+        pixmap = QtGui.QPixmap('Figure_1.png')
+        label.setPixmap(pixmap)
+        col_2.addWidget(label)
+        col_2.addWidget(QLabel('Second component'))
+        col_2.addWidget(QComboBox())
+        col_2.addWidget(QListView())
+        col_2.addWidget(QPushButton('Delete rule'))
+
+        layout = QHBoxLayout()
+        layout.addLayout(col_1)
+        layout.addLayout(col_2)
+
+        # groupbox.setEnabled(False)
+        self.stack1.setLayout(layout)
 
         self.stack2.setLayout(layout)
 
@@ -217,7 +240,7 @@ class MyWidget(QWidget):
 
     def display(self, i):
         print(type(i))
-        self.Stack.setCurrentIndex(3)
+        self.Stack.setCurrentIndex(1)
 
 
 if __name__ == "__main__":
