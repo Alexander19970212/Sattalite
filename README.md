@@ -1,5 +1,7 @@
 # A practical satellite layout optimization design approach based on evolution algorithm with polishing Nelder-mead
 
+Work is described in detail in the article [“Automation of spacecraft layout using evolutionary optimization methods”, A Kolomeitsev.  Conference FarEastCon-2020, 6-9 October, 2020.](https://ieeexplore.ieee.org/document/9271637) 
+
 The satellite layout optimization design (SLOD) problem is proposed as an automatic approach to generate better layout candidate schemes for engineers to choose from. It is addressed as a three-dimensional packing problem with behavioral constraints, which has been proven as an NP-hard problem theoretically.
 The goal of optimization is the non-intersection of components, minimization of deviations of the mass center, and axes of inertia. 
 To solve this problem, it is proposed to use a two-epochs genetic algorithm (GA) with polishing. In the first epoch, bearing faces for component and rotation are selected. In the second epoch, location coords on the bearing face are selected. And in the polishing, where the Nelder-Mead method is used, location coords are corrected. 
@@ -18,6 +20,13 @@ As a test case study satellite “orbitcraft” with 16 components are proposed.
 |---|---|
 |<img src="for_readme/Frame.png" align="left"  vspace="5" hspace="5" width=390>|<img src="for_readme/Component.bmp" align="left"  vspace="5" hspace="5" width=390>|
 
- Work with interface:
+##### Work with interface:
 
-![Interface](for_readme/Video_1.mp4)
+![Interface](for_readme/Video_1.gif)
+
+##### Result:
+The method achieved the required result (deviation of the center of mass less than 0.5 mm, deviation of angles of inertia less than 30 minutes) in 198 generations. At the same time, 773 layout options were calculated.
+
+|The first and the second epochs of GA|Polishing by Nelder-Mead algorithm|
+|---|---|
+|<img src="for_readme/Plot_1.png" align="left"  vspace="5" hspace="5" width=390>|<img src="for_readme/Plot_2.png" align="left"  vspace="5" hspace="5" width=390>|
